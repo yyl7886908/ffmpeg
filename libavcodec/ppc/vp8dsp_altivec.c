@@ -23,11 +23,10 @@
 #include "config.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/vp8dsp.h"
-#include "hpeldsp_altivec.h"
+#include "dsputil_altivec.h"
 
 #if HAVE_ALTIVEC
 #define REPT4(...) { __VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__ }
@@ -312,11 +311,10 @@ static void put_vp8_pixels16_altivec(uint8_t *dst, ptrdiff_t dstride, uint8_t *s
 
 #endif /* HAVE_ALTIVEC */
 
-
-av_cold void ff_vp78dsp_init_ppc(VP8DSPContext *c)
+av_cold void ff_vp8dsp_init_ppc(VP8DSPContext *c)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
     c->put_vp8_epel_pixels_tab[0][0][0] = put_vp8_pixels16_altivec;

@@ -27,7 +27,6 @@
 #include "avcodec.h"
 #include "acelp_pitch_delay.h"
 #include "celp_math.h"
-#include "audiodsp.h"
 
 int ff_acelp_decode_8bit_to_1st_delay3(int ac_index)
 {
@@ -92,7 +91,7 @@ void ff_acelp_update_past_gain(
 }
 
 int16_t ff_acelp_decode_gain_code(
-    AudioDSPContext *adsp,
+    DSPContext *dsp,
     int gain_corr_factor,
     const int16_t* fc_v,
     int mr_energy,
@@ -119,7 +118,7 @@ int16_t ff_acelp_decode_gain_code(
            );
 #else
     mr_energy = gain_corr_factor * exp(M_LN10 / (20 << 23) * mr_energy) /
-                sqrt(adsp->scalarproduct_int16(fc_v, fc_v, subframe_size));
+                sqrt(dsp->scalarproduct_int16(fc_v, fc_v, subframe_size));
     return mr_energy >> 12;
 #endif
 }

@@ -90,10 +90,8 @@ static int get_cpuinfo(uint32_t *hwcap)
                 *hwcap |= HWCAP_VFP;
             if (strstr(buf, " vfpv3 "))
                 *hwcap |= HWCAP_VFPv3;
-            if (strstr(buf, " neon ") || strstr(buf, " asimd "))
+            if (strstr(buf, " neon "))
                 *hwcap |= HWCAP_NEON;
-            if (strstr(buf, " fp ")) // Listed on 64 bit ARMv8 kernels
-                *hwcap |= HWCAP_VFP | HWCAP_VFPv3;
             break;
         }
     }

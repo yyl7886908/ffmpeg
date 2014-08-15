@@ -282,14 +282,6 @@ INF: while(<$inf>) {
         $_ = "\n=over 4\n";
     };
 
-    /^\@(multitable)\s+{.*/ and do {
-        push @endwstack, $endw;
-        push @icstack, $ic;
-        $endw = $1;
-        $ic = "";
-        $_ = "\n=over 4\n";
-    };
-
     /^\@((?:small)?example|display)/ and do {
         push @endwstack, $endw;
         $endw = $1;
@@ -306,10 +298,10 @@ INF: while(<$inf>) {
 
     /^\@tab\s+(.*\S)\s*$/ and $endw eq "multitable" and do {
         my $columns = $1;
-        $columns =~ s/\@tab//;
+        $columns =~ s/\@tab/ : /;
 
-        $_ = $columns;
-        $chapter =~ s/$//;
+        $_ = " : ". $columns;
+        $chapter =~ s/\n+\s+$//;
     };
 
     /^\@itemx?\s*(.+)?$/ and do {

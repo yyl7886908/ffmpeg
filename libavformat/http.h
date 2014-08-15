@@ -24,8 +24,6 @@
 
 #include "url.h"
 
-#define HTTP_HEADERS_SIZE 4096
-
 /**
  * Initialize the authentication state based on another HTTP URLContext.
  * This can be used to pre-initialize the authentication parameters if

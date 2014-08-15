@@ -30,15 +30,15 @@
 #include "mpegvideo.h"
 #include "dxva2_internal.h"
 
-void *ff_dxva2_get_surface(const AVFrame *frame)
+void *ff_dxva2_get_surface(const Picture *picture)
 {
-    return frame->data[3];
+    return picture->f.data[3];
 }
 
 unsigned ff_dxva2_get_surface_index(const struct dxva_context *ctx,
-                                    const AVFrame *frame)
+                                    const Picture *picture)
 {
-    void *surface = ff_dxva2_get_surface(frame);
+    void *surface = ff_dxva2_get_surface(picture);
     unsigned i;
 
     for (i = 0; i < ctx->surface_count; i++)
@@ -91,7 +91,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
     return result;
 }
 
-int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
+int ff_dxva2_common_end_frame(AVCodecContext *avctx, Picture *pic,
                               const void *pp, unsigned pp_size,
                               const void *qm, unsigned qm_size,
                               int (*commit_bs_si)(AVCodecContext *,
@@ -107,7 +107,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
     do {
         hr = IDirectXVideoDecoder_BeginFrame(ctx->decoder,
-                                             ff_dxva2_get_surface(frame),
+                                             ff_dxva2_get_surface(pic),
                                              NULL);
         if (hr == E_PENDING)
             av_usleep(2000);

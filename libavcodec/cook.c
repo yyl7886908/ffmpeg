@@ -44,10 +44,9 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
-
-#include "audiodsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "dsputil.h"
 #include "bytestream.h"
 #include "fft.h"
 #include "internal.h"
@@ -124,7 +123,7 @@ typedef struct cook {
     void (*saturate_output)(struct cook *q, float *out);
 
     AVCodecContext*     avctx;
-    AudioDSPContext     adsp;
+    DSPContext          dsp;
     GetBitContext       gb;
     /* stream data */
     int                 num_vectors;
@@ -220,7 +219,7 @@ static av_cold int init_cook_mlt(COOKContext *q)
     int j, ret;
     int mlt_size = q->samples_per_channel;
 
-    if ((q->mlt_window = av_malloc_array(mlt_size, sizeof(*q->mlt_window))) == 0)
+    if ((q->mlt_window = av_malloc(mlt_size * sizeof(*q->mlt_window))) == 0)
         return AVERROR(ENOMEM);
 
     /* Initialize the MLT window: simple sine window. */
@@ -874,8 +873,8 @@ static inline void decode_bytes_and_gain(COOKContext *q, COOKSubpacket *p,
  */
 static void saturate_output_float(COOKContext *q, float *out)
 {
-    q->adsp.vector_clipf(out, q->mono_mdct_output + q->samples_per_channel,
-                         -1.0f, 1.0f, FFALIGN(q->samples_per_channel, 8));
+    q->dsp.vector_clipf(out, q->mono_mdct_output + q->samples_per_channel,
+                        -1.0f, 1.0f, FFALIGN(q->samples_per_channel, 8));
 }
 
 
@@ -1073,7 +1072,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     /* Initialize RNG. */
     av_lfg_init(&q->random_state, 0);
 
-    ff_audiodsp_init(&q->adsp);
+    ff_dsputil_init(&q->dsp, avctx);
 
     while (edata_ptr < edata_ptr_end) {
         /* 8 for mono, 16 for stereo, ? for multichannel

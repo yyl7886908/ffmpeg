@@ -28,10 +28,7 @@
 
 /* this code assume stride % 16 == 0 */
 #ifdef PREFIX_h264_qpel16_h_lowpass_altivec
-static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t *dst,
-                                                 const uint8_t *src,
-                                                 int dstStride, int srcStride)
-{
+static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, int dstStride, int srcStride) {
     register int i;
 
     LOAD_ZERO;
@@ -171,10 +168,7 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t *dst,
 
 /* this code assume stride % 16 == 0 */
 #ifdef PREFIX_h264_qpel16_v_lowpass_altivec
-static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t *dst,
-                                                 const uint8_t *src,
-                                                 int dstStride, int srcStride)
-{
+static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, int dstStride, int srcStride) {
     register int i;
 
     LOAD_ZERO;
@@ -184,7 +178,7 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t *dst,
     const vec_s16 v5ss = vec_splat_s16(5);
     const vec_s16 v16ss = vec_sl(vec_splat_s16(1),vec_splat_u16(4));
 
-    const uint8_t *srcbis = src - (srcStride * 2);
+    uint8_t *srcbis = src - (srcStride * 2);
 
     const vec_u8 srcM2a = vec_ld(0, srcbis);
     const vec_u8 srcM2b = vec_ld(16, srcbis);
@@ -281,11 +275,7 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t *dst,
 
 /* this code assume stride % 16 == 0 *and* tmp is properly aligned */
 #ifdef PREFIX_h264_qpel16_hv_lowpass_altivec
-static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t *dst, int16_t *tmp,
-                                                  const uint8_t *src,
-                                                  int dstStride, int tmpStride,
-                                                  int srcStride)
-{
+static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, uint8_t * src, int dstStride, int tmpStride, int srcStride) {
     register int i;
     LOAD_ZERO;
     const vec_u8 permM2 = vec_lvsl(-2, src);

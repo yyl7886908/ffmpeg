@@ -184,8 +184,7 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
            effect, effect_type, fp->msize_x, fp->msize_y, fp->amount / 65535.0);
 
     for (z = 0; z < 2 * fp->steps_y; z++)
-        if (!(fp->sc[z] = av_malloc_array(width + 2 * fp->steps_x,
-                                          sizeof(*(fp->sc[z])))))
+        if (!(fp->sc[z] = av_malloc(sizeof(*(fp->sc[z])) * (width + 2 * fp->steps_x))))
             return AVERROR(ENOMEM);
 
     return 0;

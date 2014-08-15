@@ -134,29 +134,28 @@ typedef struct  win32_cond_t {
     volatile int is_broadcast;
 } win32_cond_t;
 
-static int pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
+static void pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
 {
     win32_cond_t *win32_cond = NULL;
     if (cond_init) {
         cond_init(cond);
-        return 0;
+        return;
     }
 
     /* non native condition variables */
     win32_cond = av_mallocz(sizeof(win32_cond_t));
     if (!win32_cond)
-        return ENOMEM;
+        return;
     cond->ptr = win32_cond;
     win32_cond->semaphore = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
     if (!win32_cond->semaphore)
-        return ENOMEM;
+        return;
     win32_cond->waiters_done = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (!win32_cond->waiters_done)
-        return ENOMEM;
+        return;
 
     pthread_mutex_init(&win32_cond->mtx_waiter_count, NULL);
     pthread_mutex_init(&win32_cond->mtx_broadcast, NULL);
-    return 0;
 }
 
 static void pthread_cond_destroy(pthread_cond_t *cond)

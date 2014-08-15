@@ -4,27 +4,23 @@ sub FFmpeg_end_section($$)
 {
 }
 
-my $TEMPLATE_HEADER1 = $ENV{"FFMPEG_HEADER1"} || <<EOT;
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>FFmpeg documentation</title>
-    <link rel="stylesheet" href="style.min.css" />
+$EXTRA_HEAD =
+'<link rel="icon" href="favicon.png" type="image/png" />
+';
+
+$CSS_LINES = $ENV{"FFMPEG_CSS"} || <<EOT;
+<link rel="stylesheet" type="text/css" href="default.css" />
 EOT
 
-my $TEMPLATE_HEADER2 = $ENV{"FFMPEG_HEADER2"} || <<EOT;
-  </head>
-  <body>
-    <div style="width: 95%; margin: auto">
+my $TEMPLATE_HEADER = $ENV{"FFMPEG_HEADER"} || <<EOT;
+<link rel="icon" href="favicon.png" type="image/png" />
+</head>
+<body>
+<div id="container">
+<div id="body">
 EOT
 
-my $TEMPLATE_FOOTER = $ENV{"FFMPEG_FOOTER"} || <<EOT;
-    </div>
-  </body>
-</html>
-EOT
+$PRE_BODY_CLOSE = '</div></div>';
 
 $SMALL_RULE = '';
 $BODYTEXT = '';
@@ -86,25 +82,21 @@ sub FFmpeg_print_page_head($$)
     $longtitle = "FFmpeg documentation : " . $longtitle;
 
     print $fh <<EOT;
-$TEMPLATE_HEADER1
-$description
-<meta name="keywords" content="$longtitle">
-<meta name="Generator" content="$Texi2HTML::THISDOC{program}">
+<!DOCTYPE html>
+<html>
 $Texi2HTML::THISDOC{'copying'}<!-- Created on $Texi2HTML::THISDOC{today} by $Texi2HTML::THISDOC{program} -->
 <!--
 $Texi2HTML::THISDOC{program_authors}
 -->
-$encoding
-$TEMPLATE_HEADER2
-EOT
-}
+<head>
+<title>$longtitle</title>
 
-$print_page_foot = \&FFmpeg_print_page_foot;
-sub FFmpeg_print_page_foot($$)
-{
-    my $fh = shift;
-    print $fh <<EOT;
-$TEMPLATE_FOOTER
+$description
+<meta name="keywords" content="$longtitle">
+<meta name="Generator" content="$Texi2HTML::THISDOC{program}">
+$encoding
+$CSS_LINES
+$TEMPLATE_HEADER
 EOT
 }
 

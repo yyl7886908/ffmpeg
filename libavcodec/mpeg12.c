@@ -33,6 +33,7 @@
 
 #include "internal.h"
 #include "avcodec.h"
+#include "dsputil.h"
 #include "mpegvideo.h"
 #include "error_resilience.h"
 #include "mpeg12.h"

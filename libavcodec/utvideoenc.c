@@ -28,10 +28,9 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
-#include "bswapdsp.h"
 #include "bytestream.h"
 #include "put_bits.h"
-#include "huffyuvencdsp.h"
+#include "dsputil.h"
 #include "mathops.h"
 #include "utvideo.h"
 #include "huffman.h"
@@ -109,8 +108,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    ff_bswapdsp_init(&c->bdsp);
-    ff_huffyuvencdsp_init(&c->hdsp);
+    ff_dsputil_init(&c->dsp, avctx);
 
     /* Check the prediction method, and error out if unsupported */
     if (avctx->prediction_method < 0 || avctx->prediction_method > 4) {
@@ -314,7 +312,7 @@ static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int st
 
     /* Rest of the coded part uses median prediction */
     for (j = 1; j < height; j++) {
-        c->hdsp.sub_hfyu_median_pred(dst, src - stride, src, width, &A, &B);
+        c->dsp.sub_hfyu_median_prediction(dst, src - stride, src, width, &A, &B);
         dst += width;
         src += stride;
     }
@@ -468,7 +466,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     }
 
     /* Calculate huffman lengths */
-    if ((ret = ff_huff_gen_len_table(lengths, counts, 256, 1)) < 0)
+    if ((ret = ff_huff_gen_len_table(lengths, counts, 256)) < 0)
         return ret;
 
     /*
@@ -502,9 +500,9 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
         slice_len = offset - slice_len;
 
         /* Byteswap the written huffman codes */
-        c->bdsp.bswap_buf((uint32_t *) c->slice_bits,
-                          (uint32_t *) c->slice_bits,
-                          slice_len >> 2);
+        c->dsp.bswap_buf((uint32_t *) c->slice_bits,
+                         (uint32_t *) c->slice_bits,
+                         slice_len >> 2);
 
         /* Write the offset to the stream */
         bytestream2_put_le32(pb, offset);
@@ -642,7 +640,6 @@ AVCodec ff_utvideo_encoder = {
     .init           = utvideo_encode_init,
     .encode2        = utvideo_encode_frame,
     .close          = utvideo_encode_close,
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_YUV422P,
                           AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE

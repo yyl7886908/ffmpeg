@@ -25,7 +25,6 @@
 
 #include "avcodec.h"
 #include "h264.h"
-#include "mpegutils.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 
@@ -47,10 +46,10 @@ static void vdpau_h264_clear_rf(VdpReferenceFrameH264 *rf)
     rf->frame_idx           = 0;
 }
 
-static void vdpau_h264_set_rf(VdpReferenceFrameH264 *rf, H264Picture *pic,
+static void vdpau_h264_set_rf(VdpReferenceFrameH264 *rf, Picture *pic,
                               int pic_structure)
 {
-    VdpVideoSurface surface = ff_vdpau_get_surface_id(&pic->f);
+    VdpVideoSurface surface = ff_vdpau_get_surface_id(pic);
 
     if (pic_structure == 0)
         pic_structure = pic->reference;
@@ -75,11 +74,11 @@ static void vdpau_h264_set_reference_frames(AVCodecContext *avctx)
 #define H264_RF_COUNT FF_ARRAY_ELEMS(info->referenceFrames)
 
     for (list = 0; list < 2; ++list) {
-        H264Picture **lp = list ? h->long_ref : h->short_ref;
+        Picture **lp = list ? h->long_ref : h->short_ref;
         int i, ls    = list ? 16          : h->short_ref_count;
 
         for (i = 0; i < ls; ++i) {
-            H264Picture *pic = lp[i];
+            Picture *pic = lp[i];
             VdpReferenceFrameH264 *rf2;
             VdpVideoSurface surface_ref;
             int pic_frame_idx;
@@ -87,7 +86,7 @@ static void vdpau_h264_set_reference_frames(AVCodecContext *avctx)
             if (!pic || !pic->reference)
                 continue;
             pic_frame_idx = pic->long_ref ? pic->pic_id : pic->frame_num;
-            surface_ref = ff_vdpau_get_surface_id(&pic->f);
+            surface_ref = ff_vdpau_get_surface_id(pic);
 
             rf2 = &info->referenceFrames[0];
             while (rf2 != rf) {
@@ -119,7 +118,7 @@ static int vdpau_h264_start_frame(AVCodecContext *avctx,
                                   const uint8_t *buffer, uint32_t size)
 {
     H264Context * const h = avctx->priv_data;
-    H264Picture *pic = h->cur_pic_ptr;
+    Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpPictureInfoH264 *info = &pic_ctx->info.h264;
 
@@ -162,7 +161,7 @@ static int vdpau_h264_start_frame(AVCodecContext *avctx,
 
     vdpau_h264_set_reference_frames(avctx);
 
-    return ff_vdpau_common_start_frame(pic_ctx, buffer, size);
+    return ff_vdpau_common_start_frame(pic, buffer, size);
 }
 
 static const uint8_t start_code_prefix[3] = { 0x00, 0x00, 0x01 };
@@ -171,15 +170,15 @@ static int vdpau_h264_decode_slice(AVCodecContext *avctx,
                                    const uint8_t *buffer, uint32_t size)
 {
     H264Context *h = avctx->priv_data;
-    H264Picture *pic = h->cur_pic_ptr;
+    Picture *pic   = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
 
-    val = ff_vdpau_add_buffer(pic_ctx, start_code_prefix, 3);
+    val = ff_vdpau_add_buffer(pic, start_code_prefix, 3);
     if (val)
         return val;
 
-    val = ff_vdpau_add_buffer(pic_ctx, buffer, size);
+    val = ff_vdpau_add_buffer(pic, buffer, size);
     if (val)
         return val;
 
@@ -192,9 +191,9 @@ static int vdpau_h264_end_frame(AVCodecContext *avctx)
     int res = 0;
     AVVDPAUContext *hwctx = avctx->hwaccel_context;
     H264Context *h = avctx->priv_data;
-    H264Picture *pic = h->cur_pic_ptr;
+    Picture *pic   = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
-    VdpVideoSurface surf = ff_vdpau_get_surface_id(&pic->f);
+    VdpVideoSurface surf = ff_vdpau_get_surface_id(pic);
 
 #if FF_API_BUFS_VDPAU
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -234,5 +233,5 @@ AVHWAccel ff_h264_vdpau_hwaccel = {
     .start_frame    = vdpau_h264_start_frame,
     .end_frame      = vdpau_h264_end_frame,
     .decode_slice   = vdpau_h264_decode_slice,
-    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };

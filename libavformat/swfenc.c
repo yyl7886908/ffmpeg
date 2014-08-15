@@ -212,7 +212,6 @@ static int swf_write_header(AVFormatContext *s)
             if (enc->codec_id == AV_CODEC_ID_VP6F ||
                 enc->codec_id == AV_CODEC_ID_FLV1 ||
                 enc->codec_id == AV_CODEC_ID_MJPEG) {
-                swf->video_st  = s->streams[i];
                 swf->video_enc = enc;
             } else {
                 av_log(s, AV_LOG_ERROR, "SWF muxer only supports VP6, FLV1 and MJPEG\n");
@@ -230,9 +229,8 @@ static int swf_write_header(AVFormatContext *s)
     } else {
         width = swf->video_enc->width;
         height = swf->video_enc->height;
-        // TODO: should be avg_frame_rate
-        rate = swf->video_st->time_base.den;
-        rate_base = swf->video_st->time_base.num;
+        rate = swf->video_enc->time_base.den;
+        rate_base = swf->video_enc->time_base.num;
     }
 
     if (!swf->audio_enc)
@@ -492,7 +490,8 @@ static int swf_write_trailer(AVFormatContext *s)
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
             video_enc = enc;
         else {
-            av_fifo_freep(&swf->audio_fifo);
+            av_fifo_free(swf->audio_fifo);
+            swf->audio_fifo = NULL;
         }
     }
 

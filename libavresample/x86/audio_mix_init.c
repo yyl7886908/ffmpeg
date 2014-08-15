@@ -173,6 +173,7 @@ DEFINE_MIX_3_8_TO_1_2(8)
 
 av_cold void ff_audio_mix_init_x86(AudioMix *am)
 {
+#if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE(cpu_flags)) {
@@ -210,4 +211,5 @@ av_cold void ff_audio_mix_init_x86(AudioMix *am)
     SET_MIX_3_8_TO_1_2(6)
     SET_MIX_3_8_TO_1_2(7)
     SET_MIX_3_8_TO_1_2(8)
+#endif /* HAVE_YASM */
 }

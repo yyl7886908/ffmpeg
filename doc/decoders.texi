@@ -62,7 +62,7 @@ AC-3 audio decoder.
 This decoder implements part of ATSC A/52:2010 and ETSI TS 102 366, as well as
 the undocumented RealAudio 3 (a.k.a. dnet).
 
-@subsection AC-3 Decoder Options
+@subsubsection AC-3 Decoder Options
 
 @table @option
 
@@ -162,9 +162,6 @@ libopus allows libavcodec to decode the Opus Interactive Audio Codec.
 Requires the presence of the libopus headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libopus}.
-
-An FFmpeg native decoder for Opus exists, so users can decode Opus
-without this library.
 
 @c man end AUDIO DECODERS
 

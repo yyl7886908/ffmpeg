@@ -99,7 +99,6 @@ int main(int argc, char **argv)
             fprintf(stderr, "Failed to copy context from input to output stream codec context\n");
             goto end;
         }
-        out_stream->codec->codec_tag = 0;
         if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
             out_stream->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }

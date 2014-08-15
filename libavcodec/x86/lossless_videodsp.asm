@@ -37,21 +37,19 @@ SECTION_TEXT
     add     wd, wd
     test    wq, 2*mmsize - 1
     jz %%.tomainloop
-    push  tmpq
 %%.wordloop:
     sub     wq, 2
 %ifidn %2, add
-    mov   tmpw, [srcq+wq]
-    add   tmpw, [dstq+wq]
+    mov     ax, [srcq+wq]
+    add     ax, [dstq+wq]
 %else
-    mov   tmpw, [src1q+wq]
-    sub   tmpw, [src2q+wq]
+    mov     ax, [src1q+wq]
+    sub     ax, [src2q+wq]
 %endif
-    and   tmpw, maskw
-    mov     [dstq+wq], tmpw
+    and     ax, maskw
+    mov     [dstq+wq], ax
     test    wq, 2*mmsize - 1
     jnz %%.wordloop
-    pop   tmpq
 %%.tomainloop:
 %ifidn %2, add
     add     srcq, wq
@@ -87,11 +85,11 @@ SECTION_TEXT
 %endmacro
 
 INIT_MMX mmx
-cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
+cglobal add_int16, 4,4,5, dst, src, mask, w
     INT16_LOOP a, add
 
 INIT_XMM sse2
-cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
+cglobal add_int16, 4,4,5, dst, src, mask, w
     test srcq, mmsize-1
     jnz .unaligned
     test dstq, mmsize-1
@@ -101,11 +99,11 @@ cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
     INT16_LOOP u, add
 
 INIT_MMX mmx
-cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
+cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
     INT16_LOOP a, sub
 
 INIT_XMM sse2
-cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
+cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w
     test src1q, mmsize-1
     jnz .unaligned
     test src2q, mmsize-1
@@ -158,9 +156,9 @@ cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
     RET
 %endmacro
 
-; int add_hfyu_left_pred_int16(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int left)
+; int add_hfyu_left_prediction_int16(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int left)
 INIT_MMX ssse3
-cglobal add_hfyu_left_pred_int16, 4,4,8, dst, src, mask, w, left
+cglobal add_hfyu_left_prediction_int16, 4,4,8, dst, src, mask, w, left
 .skip_prologue:
     mova    m5, [pb_67]
     mova    m3, [pb_zzzz2323zzzzabab]
@@ -171,7 +169,7 @@ cglobal add_hfyu_left_pred_int16, 4,4,8, dst, src, mask, w, left
     ADD_HFYU_LEFT_LOOP_INT16 a, a
 
 INIT_XMM sse4
-cglobal add_hfyu_left_pred_int16, 4,4,8, dst, src, mask, w, left
+cglobal add_hfyu_left_prediction_int16, 4,4,8, dst, src, mask, w, left
     mova    m5, [pb_ef]
     mova    m4, [pb_zzzzzzzz67676767]
     mova    m3, [pb_zzzz2323zzzzabab]
@@ -191,7 +189,7 @@ cglobal add_hfyu_left_pred_int16, 4,4,8, dst, src, mask, w, left
 
 ; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int mask, int w, int *left, int *left_top)
 INIT_MMX mmxext
-cglobal add_hfyu_median_pred_int16, 7,7,0, dst, top, diff, mask, w, left, left_top
+cglobal add_hfyu_median_prediction_int16, 7,7,0, dst, top, diff, mask, w, left, left_top
     add      wd, wd
     movd    mm6, maskd
     SPLATW  mm6, mm6
@@ -254,7 +252,7 @@ cglobal add_hfyu_median_pred_int16, 7,7,0, dst, top, diff, mask, w, left, left_t
     mov [left_topq], r2d
     RET
 
-cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
+cglobal sub_hfyu_median_prediction_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
     add      wd, wd
     movd    mm7, maskd
     SPLATW  mm7, mm7
@@ -287,8 +285,8 @@ cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_
     movq    mm2, [src2q + maskq - 2]
     cmp     maskq, wq
         jb .loop
-    movzx maskd, word [src1q + wq - 2]
+    mov maskd, [src1q + wq - 2]
     mov [left_topq], maskd
-    movzx maskd, word [src2q + wq - 2]
+    mov maskd, [src2q + wq - 2]
     mov [leftq], maskd
     RET

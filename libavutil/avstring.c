@@ -331,15 +331,15 @@ int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
     while (code & top) {
         int tmp;
         if (p >= buf_end) {
-            (*bufp) ++;
-            return AVERROR(EILSEQ); /* incomplete sequence */
+            ret = AVERROR(EILSEQ); /* incomplete sequence */
+            goto end;
         }
 
         /* we assume the byte to be in the form 10xx-xxxx */
         tmp = *p++ - 128;   /* strip leading 1 */
         if (tmp>>6) {
-            (*bufp) ++;
-            return AVERROR(EILSEQ);
+            ret = AVERROR(EILSEQ);
+            goto end;
         }
         code = (code<<6) + tmp;
         top <<= 5;

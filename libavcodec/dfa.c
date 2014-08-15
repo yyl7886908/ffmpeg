@@ -20,13 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <inttypes.h>
-
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 
@@ -371,8 +369,7 @@ static int dfa_decode_frame(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             }
         } else {
-            av_log(avctx, AV_LOG_WARNING,
-                   "Ignoring unknown chunk type %"PRIu32"\n",
+            av_log(avctx, AV_LOG_WARNING, "Ignoring unknown chunk type %d\n",
                    chunk_type);
         }
         buf += chunk_size;

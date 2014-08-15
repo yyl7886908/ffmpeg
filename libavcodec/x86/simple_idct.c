@@ -19,11 +19,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
+#include "libavcodec/simple_idct.h"
 #include "libavutil/mem.h"
-#include "libavutil/x86/asm.h"
-#include "idctdsp.h"
-#include "simple_idct.h"
+#include "dsputil_x86.h"
 
 #if HAVE_INLINE_ASM
 
@@ -1144,7 +1142,6 @@ Temp
 
 "9: \n\t"
                 :: "r" (block), "r" (temp), "r" (coeffs)
-                   NAMED_CONSTRAINTS_ADD(wm1010,d40000)
                 : "%eax"
         );
 }

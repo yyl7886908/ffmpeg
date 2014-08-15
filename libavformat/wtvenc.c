@@ -30,7 +30,6 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
-#include "mpegts.h"
 #include "wtv.h"
 
 #define WTV_BIGSECTOR_SIZE (1 << WTV_BIGSECTOR_BITS)
@@ -244,15 +243,14 @@ static void put_videoinfoheader2(AVIOContext *pb, AVStream *st)
     ff_put_bmp_header(pb, st->codec, ff_codec_bmp_tags, 0, 1);
 
     if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-        int padding = (st->codec->extradata_size & 3) ? 4 - (st->codec->extradata_size & 3) : 0;
         /* MPEG2VIDEOINFO */
         avio_wl32(pb, 0);
-        avio_wl32(pb, st->codec->extradata_size + padding);
+        avio_wl32(pb, st->codec->extradata_size);
         avio_wl32(pb, -1);
         avio_wl32(pb, -1);
         avio_wl32(pb, 0);
         avio_write(pb, st->codec->extradata, st->codec->extradata_size);
-        ffio_fill(pb, 0, padding);
+        avio_wl64(pb, 0);
     }
 }
 
@@ -289,7 +287,7 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         put_videoinfoheader2(pb, st);
     } else {
-        if (ff_put_wav_header(pb, st->codec, 0) < 0)
+        if (ff_put_wav_header(pb, st->codec) < 0)
             format_type = &ff_format_none;
     }
     hdr_size = avio_tell(pb) - hdr_pos_start;
@@ -461,15 +459,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
     WtvContext  *wctx = s->priv_data;
-    AVStream    *st   = s->streams[pkt->stream_index];
 
-    if (st->codec->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
+    if (s->streams[pkt->stream_index]->codec->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
         av_copy_packet(&wctx->thumbnail, pkt);
         return 0;
-    } else if (st->codec->codec_id == AV_CODEC_ID_H264) {
-        int ret = ff_check_h264_startcode(s, st, pkt);
-        if (ret < 0)
-            return ret;
     }
 
     /* emit sync chunk and 'timeline.table.0.entries.Event' record every 50 frames */

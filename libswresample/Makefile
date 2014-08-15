@@ -8,10 +8,8 @@ HEADERS = swresample.h                       \
 
 OBJS = audioconvert.o                        \
        dither.o                              \
-       options.o                             \
        rematrix.o                            \
        resample.o                            \
-       resample_dsp.o                        \
        swresample.o                          \
 
 OBJS-$(CONFIG_LIBSOXR) += soxr_resample.o

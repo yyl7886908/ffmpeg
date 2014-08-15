@@ -27,7 +27,6 @@
 
 #include "asv.h"
 #include "avcodec.h"
-#include "bswapdsp.h"
 
 const uint8_t ff_asv_scantab[64] = {
     0x00,0x08,0x01,0x09,0x10,0x18,0x11,0x19,
@@ -83,7 +82,7 @@ const uint8_t ff_asv2_level_tab[63][2] = {
 av_cold void ff_asv_common_init(AVCodecContext *avctx) {
     ASV1Context * const a = avctx->priv_data;
 
-    ff_bswapdsp_init(&a->bbdsp);
+    ff_dsputil_init(&a->dsp, avctx);
 
     a->mb_width   = (avctx->width  + 15) / 16;
     a->mb_height  = (avctx->height + 15) / 16;

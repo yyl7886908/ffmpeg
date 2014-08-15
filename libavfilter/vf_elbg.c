@@ -33,7 +33,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct ColorContext {
+typedef struct {
     const AVClass *class;
     AVLFG lfg;
     unsigned int lfg_seed;

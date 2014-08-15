@@ -331,10 +331,8 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
         return ret;
 
 #define READ16(dst) do {                \
-    if (size < 2) {                     \
-        ret = AVERROR_INVALIDDATA;      \
-        goto end;                       \
-    }                                   \
+    if (size < 2)                       \
+        return AVERROR_INVALIDDATA;     \
     dst = AV_RB16(buf);                 \
     buf  += 2;                          \
     size -= 2;                          \

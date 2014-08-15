@@ -19,7 +19,6 @@
  */
 
 #include "avcodec.h"
-#include "idctdsp.h"
 #include "mpegvideo.h"
 #include "msmpeg4data.h"
 #include "simple_idct.h"
@@ -29,26 +28,25 @@
 av_cold void ff_wmv2_common_init(Wmv2Context * w){
     MpegEncContext * const s= &w->s;
 
-    ff_blockdsp_init(&s->bdsp, s->avctx);
     ff_wmv2dsp_init(&w->wdsp);
-    s->idsp.perm_type = w->wdsp.idct_perm;
-    ff_init_scantable_permutation(s->idsp.idct_permutation,
+    s->dsp.idct_permutation_type = w->wdsp.idct_perm;
+    ff_init_scantable_permutation(s->dsp.idct_permutation,
                                   w->wdsp.idct_perm);
-    ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[0],
+    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[0],
                       ff_wmv2_scantableA);
-    ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[1],
+    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[1],
                       ff_wmv2_scantableB);
-    ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable,
                       ff_wmv1_scantable[1]);
-    ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable,
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_h_scantable,
                       ff_wmv1_scantable[2]);
-    ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable,
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_v_scantable,
                       ff_wmv1_scantable[3]);
-    ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,
+    ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable,
                       ff_wmv1_scantable[0]);
-    s->idsp.idct_put = w->wdsp.idct_put;
-    s->idsp.idct_add = w->wdsp.idct_add;
-    s->idsp.idct     = NULL;
+    s->dsp.idct_put = w->wdsp.idct_put;
+    s->dsp.idct_add = w->wdsp.idct_add;
+    s->dsp.idct     = NULL;
 }
 
 static void wmv2_add_block(Wmv2Context *w, int16_t *block1, uint8_t *dst, int stride, int n){
@@ -62,12 +60,12 @@ static void wmv2_add_block(Wmv2Context *w, int16_t *block1, uint8_t *dst, int st
     case 1:
         ff_simple_idct84_add(dst           , stride, block1);
         ff_simple_idct84_add(dst + 4*stride, stride, w->abt_block2[n]);
-        s->bdsp.clear_block(w->abt_block2[n]);
+        s->dsp.clear_block(w->abt_block2[n]);
         break;
     case 2:
         ff_simple_idct48_add(dst           , stride, block1);
         ff_simple_idct48_add(dst + 4       , stride, w->abt_block2[n]);
-        s->bdsp.clear_block(w->abt_block2[n]);
+        s->dsp.clear_block(w->abt_block2[n]);
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "internal error in WMV2 abt\n");
@@ -131,20 +129,28 @@ void ff_mspel_motion(MpegEncContext *s,
         emu=1;
     }
 
-    w->wdsp.put_mspel_pixels_tab[dxy](dest_y,                    ptr,                    linesize);
-    w->wdsp.put_mspel_pixels_tab[dxy](dest_y     + 8,            ptr     + 8,            linesize);
-    w->wdsp.put_mspel_pixels_tab[dxy](dest_y     + 8 * linesize, ptr     + 8 * linesize, linesize);
-    w->wdsp.put_mspel_pixels_tab[dxy](dest_y + 8 + 8 * linesize, ptr + 8 + 8 * linesize, linesize);
+    s->dsp.put_mspel_pixels_tab[dxy](dest_y             , ptr             , linesize);
+    s->dsp.put_mspel_pixels_tab[dxy](dest_y+8           , ptr+8           , linesize);
+    s->dsp.put_mspel_pixels_tab[dxy](dest_y  +8*linesize, ptr  +8*linesize, linesize);
+    s->dsp.put_mspel_pixels_tab[dxy](dest_y+8+8*linesize, ptr+8+8*linesize, linesize);
 
     if(s->flags&CODEC_FLAG_GRAY) return;
 
-    dxy = 0;
-    if ((motion_x & 3) != 0)
-        dxy |= 1;
-    if ((motion_y & 3) != 0)
-        dxy |= 2;
-    mx = motion_x >> 2;
-    my = motion_y >> 2;
+    if (s->out_format == FMT_H263) {
+        dxy = 0;
+        if ((motion_x & 3) != 0)
+            dxy |= 1;
+        if ((motion_y & 3) != 0)
+            dxy |= 2;
+        mx = motion_x >> 2;
+        my = motion_y >> 2;
+    } else {
+        mx = motion_x / 2;
+        my = motion_y / 2;
+        dxy = ((my & 1) << 1) | (mx & 1);
+        mx >>= 1;
+        my >>= 1;
+    }
 
     src_x = s->mb_x * 8 + mx;
     src_y = s->mb_y * 8 + my;

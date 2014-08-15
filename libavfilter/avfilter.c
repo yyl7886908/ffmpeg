@@ -295,7 +295,7 @@ int avfilter_config_links(AVFilterContext *filter)
 
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0) {
-                    av_log(link->dst, AV_LOG_ERROR,
+                    av_log(link->src, AV_LOG_ERROR,
                            "Failed to configure input pad on %s\n",
                            link->dst->name);
                     return ret;
@@ -627,22 +627,22 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 
     ret->nb_inputs = avfilter_pad_count(filter->inputs);
     if (ret->nb_inputs ) {
-        ret->input_pads   = av_malloc_array(ret->nb_inputs, sizeof(AVFilterPad));
+        ret->input_pads   = av_malloc(sizeof(AVFilterPad) * ret->nb_inputs);
         if (!ret->input_pads)
             goto err;
         memcpy(ret->input_pads, filter->inputs, sizeof(AVFilterPad) * ret->nb_inputs);
-        ret->inputs       = av_mallocz_array(ret->nb_inputs, sizeof(AVFilterLink*));
+        ret->inputs       = av_mallocz(sizeof(AVFilterLink*) * ret->nb_inputs);
         if (!ret->inputs)
             goto err;
     }
 
     ret->nb_outputs = avfilter_pad_count(filter->outputs);
     if (ret->nb_outputs) {
-        ret->output_pads  = av_malloc_array(ret->nb_outputs, sizeof(AVFilterPad));
+        ret->output_pads  = av_malloc(sizeof(AVFilterPad) * ret->nb_outputs);
         if (!ret->output_pads)
             goto err;
         memcpy(ret->output_pads, filter->outputs, sizeof(AVFilterPad) * ret->nb_outputs);
-        ret->outputs      = av_mallocz_array(ret->nb_outputs, sizeof(AVFilterLink*));
+        ret->outputs      = av_mallocz(sizeof(AVFilterLink*) * ret->nb_outputs);
         if (!ret->outputs)
             goto err;
     }

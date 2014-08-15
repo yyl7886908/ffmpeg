@@ -108,14 +108,9 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     s->freq_index = i;
 
     /* encoding bitrate & frequency */
-    for(i=1;i<15;i++) {
+    for(i=0;i<15;i++) {
         if (avpriv_mpa_bitrate_tab[s->lsf][1][i] == bitrate)
             break;
-    }
-    if (i == 15 && !avctx->bit_rate) {
-        i = 14;
-        bitrate = avpriv_mpa_bitrate_tab[s->lsf][1][i];
-        avctx->bit_rate = bitrate * 1000;
     }
     if (i == 15){
         av_log(avctx, AV_LOG_ERROR, "bitrate %d is not allowed in mp2\n", bitrate);
@@ -705,10 +700,9 @@ static void encode_frame(MpegAudioContext *s,
                                 else
                                     q1 = sample >> shift;
                                 q1 = (q1 * mult) >> P;
-                                q1 += 1 << P;
-                                if (q1 < 0)
-                                    q1 = 0;
-                                q[m] = (q1 * (unsigned)steps) >> (P + 1);
+                                q[m] = ((q1 + (1 << P)) * steps) >> (P + 1);
+                                if (q[m] < 0)
+                                    q[m] = 0;
                             }
 #endif
                             if (q[m] >= steps)
@@ -779,7 +773,7 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 static const AVCodecDefault mp2_defaults[] = {
-    { "b", "0" },
+    { "b",    "128k" },
     { NULL },
 };
 

@@ -12,7 +12,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=642
+pos=572
 flags=K
 
 [packets_and_frames.frame.0]
@@ -26,7 +26,7 @@ best_effort_timestamp=0
 best_effort_timestamp_time=0.000000
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=642
+pkt_pos=572
 pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
@@ -45,7 +45,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=2717
+pos=2647
 flags=K
 
 [packets_and_frames.frame.1]
@@ -59,8 +59,8 @@ best_effort_timestamp=0
 best_effort_timestamp_time=0.000000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=2717
-pkt_size=230400
+pkt_pos=2647
+pkt_size=N/A
 width=320
 height=240
 pix_fmt=rgb24
@@ -84,7 +84,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=233138
+pos=233068
 flags=K
 
 [packets_and_frames.frame.2]
@@ -98,8 +98,8 @@ best_effort_timestamp=0
 best_effort_timestamp_time=0.000000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=233138
-pkt_size=30000
+pkt_pos=233068
+pkt_size=N/A
 width=100
 height=100
 pix_fmt=rgb24
@@ -123,7 +123,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=263143
+pos=263073
 flags=K
 
 [packets_and_frames.frame.3]
@@ -137,7 +137,7 @@ best_effort_timestamp=1024
 best_effort_timestamp_time=0.023220
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=263143
+pkt_pos=263073
 pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
@@ -156,7 +156,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=265221
+pos=265151
 flags=K
 
 [packets_and_frames.frame.4]
@@ -170,8 +170,8 @@ best_effort_timestamp=2048
 best_effort_timestamp_time=0.040000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=265221
-pkt_size=230400
+pkt_pos=265151
+pkt_size=N/A
 width=320
 height=240
 pix_fmt=rgb24
@@ -195,7 +195,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=495645
+pos=495575
 flags=K
 
 [packets_and_frames.frame.5]
@@ -209,8 +209,8 @@ best_effort_timestamp=2048
 best_effort_timestamp_time=0.040000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=495645
-pkt_size=30000
+pkt_pos=495575
+pkt_size=N/A
 width=100
 height=100
 pix_fmt=rgb24
@@ -234,7 +234,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=525650
+pos=525580
 flags=K
 
 [packets_and_frames.frame.6]
@@ -248,7 +248,7 @@ best_effort_timestamp=2048
 best_effort_timestamp_time=0.046440
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=525650
+pkt_pos=525580
 pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
@@ -267,7 +267,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=527721
+pos=527651
 flags=K
 
 [packets_and_frames.frame.7]
@@ -281,7 +281,7 @@ best_effort_timestamp=3072
 best_effort_timestamp_time=0.069660
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=527721
+pkt_pos=527651
 pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
@@ -300,7 +300,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=529799
+pos=529729
 flags=K
 
 [packets_and_frames.frame.8]
@@ -314,8 +314,8 @@ best_effort_timestamp=4096
 best_effort_timestamp_time=0.080000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=529799
-pkt_size=230400
+pkt_pos=529729
+pkt_size=N/A
 width=320
 height=240
 pix_fmt=rgb24
@@ -339,7 +339,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=760223
+pos=760153
 flags=K
 
 [packets_and_frames.frame.9]
@@ -353,8 +353,8 @@ best_effort_timestamp=4096
 best_effort_timestamp_time=0.080000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=760223
-pkt_size=30000
+pkt_pos=760153
+pkt_size=N/A
 width=100
 height=100
 pix_fmt=rgb24
@@ -378,7 +378,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=790228
+pos=790158
 flags=K
 
 [packets_and_frames.frame.10]
@@ -392,7 +392,7 @@ best_effort_timestamp=4096
 best_effort_timestamp_time=0.092880
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=790228
+pkt_pos=790158
 pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
@@ -411,7 +411,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=792299
+pos=792229
 flags=K
 
 [packets_and_frames.frame.11]
@@ -425,7 +425,7 @@ best_effort_timestamp=5120
 best_effort_timestamp_time=0.116100
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=792299
+pkt_pos=792229
 pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
@@ -444,7 +444,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=794377
+pos=794307
 flags=K
 
 [packets_and_frames.frame.12]
@@ -458,8 +458,8 @@ best_effort_timestamp=6144
 best_effort_timestamp_time=0.120000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=794377
-pkt_size=230400
+pkt_pos=794307
+pkt_size=N/A
 width=320
 height=240
 pix_fmt=rgb24
@@ -483,7 +483,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=1024801
+pos=1024731
 flags=K
 
 [packets_and_frames.frame.13]
@@ -497,8 +497,8 @@ best_effort_timestamp=6144
 best_effort_timestamp_time=0.120000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=1024801
-pkt_size=30000
+pkt_pos=1024731
+pkt_size=N/A
 width=100
 height=100
 pix_fmt=rgb24
@@ -532,7 +532,6 @@ start_time=0.000000
 duration_ts=N/A
 duration=N/A
 bit_rate=705600
-max_bit_rate=N/A
 nb_frames=N/A
 nb_read_frames=6
 nb_read_packets=6
@@ -552,7 +551,6 @@ attached_pic=0
 
 [streams.stream.0.tags]
 E=mc²
-encoder=Lavc pcm_s16le
 
 [streams.stream.1]
 index=1
@@ -569,8 +567,6 @@ sample_aspect_ratio=1\:1
 display_aspect_ratio=4\:3
 pix_fmt=rgb24
 level=-99
-color_range=N/A
-color_space=unknown
 timecode=N/A
 id=N/A
 r_frame_rate=25/1
@@ -581,7 +577,6 @@ start_time=0.000000
 duration_ts=N/A
 duration=N/A
 bit_rate=N/A
-max_bit_rate=N/A
 nb_frames=N/A
 nb_read_frames=4
 nb_read_packets=4
@@ -602,7 +597,6 @@ attached_pic=0
 [streams.stream.1.tags]
 title=foobar
 duration_ts=field-and-tags-conflict-attempt
-encoder=Lavc rawvideo
 
 [streams.stream.2]
 index=2
@@ -619,8 +613,6 @@ sample_aspect_ratio=1\:1
 display_aspect_ratio=1\:1
 pix_fmt=rgb24
 level=-99
-color_range=N/A
-color_space=unknown
 timecode=N/A
 id=N/A
 r_frame_rate=25/1
@@ -631,7 +623,6 @@ start_time=0.000000
 duration_ts=N/A
 duration=N/A
 bit_rate=N/A
-max_bit_rate=N/A
 nb_frames=N/A
 nb_read_frames=4
 nb_read_packets=4
@@ -649,9 +640,6 @@ visual_impaired=0
 clean_effects=0
 attached_pic=0
 
-[streams.stream.2.tags]
-encoder=Lavc rawvideo
-
 [format]
 filename=tests/data/ffprobe-test.nut
 nb_streams=3
@@ -659,8 +647,8 @@ nb_programs=0
 format_name=nut
 start_time=0.000000
 duration=0.120000
-size=1054882
-bit_rate=70325466
+size=1054812
+bit_rate=70320800
 probe_score=100
 
 [format.tags]

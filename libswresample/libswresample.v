@@ -1,4 +1,4 @@
 LIBSWRESAMPLE_$MAJOR {
-        global: swr_*; swresample_*;
+        global: swr_*; ff_*; swresample_*;
         local: *;
 };

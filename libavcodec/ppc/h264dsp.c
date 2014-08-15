@@ -22,7 +22,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/h264data.h"
@@ -746,7 +745,7 @@ av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
                                  const int chroma_format_idc)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
     if (bit_depth == 8) {

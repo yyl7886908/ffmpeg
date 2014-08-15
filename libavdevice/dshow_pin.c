@@ -328,7 +328,7 @@ libAVMemInputPin_Receive(libAVMemInputPin *this, IMediaSample *sample)
     priv_data = pin->filter->priv_data;
     index = pin->filter->stream_index;
 
-    pin->filter->callback(priv_data, index, buf, buf_size, curtime, devtype);
+    pin->filter->callback(priv_data, index, buf, buf_size, curtime);
 
     return S_OK;
 }

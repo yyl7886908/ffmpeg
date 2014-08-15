@@ -833,10 +833,8 @@ void ff_rtp_parse_close(RTPDemuxContext *s)
     av_free(s);
 }
 
-int ff_parse_fmtp(AVFormatContext *s,
-                  AVStream *stream, PayloadContext *data, const char *p,
-                  int (*parse_fmtp)(AVFormatContext *s,
-                                    AVStream *stream,
+int ff_parse_fmtp(AVStream *stream, PayloadContext *data, const char *p,
+                  int (*parse_fmtp)(AVStream *stream,
                                     PayloadContext *data,
                                     char *attr, char *value))
 {
@@ -861,7 +859,7 @@ int ff_parse_fmtp(AVFormatContext *s,
     while (ff_rtsp_next_attr_and_value(&p,
                                        attr, sizeof(attr),
                                        value, value_size)) {
-        res = parse_fmtp(s, stream, data, attr, value);
+        res = parse_fmtp(stream, data, attr, value);
         if (res < 0 && res != AVERROR_PATCHWELCOME) {
             av_free(value);
             return res;

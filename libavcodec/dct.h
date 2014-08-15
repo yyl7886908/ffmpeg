@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#if !defined(AVCODEC_DCT_H) && (!defined(FFT_FLOAT) || FFT_FLOAT)
+#ifndef AVCODEC_DCT_H
 #define AVCODEC_DCT_H
 
 #include <stdint.h>
@@ -62,5 +62,9 @@ void ff_j_rev_dct(int16_t *data);
 void ff_j_rev_dct4(int16_t *data);
 void ff_j_rev_dct2(int16_t *data);
 void ff_j_rev_dct1(int16_t *data);
+
+void ff_fdct_mmx(int16_t *block);
+void ff_fdct_mmxext(int16_t *block);
+void ff_fdct_sse2(int16_t *block);
 
 #endif /* AVCODEC_DCT_H */

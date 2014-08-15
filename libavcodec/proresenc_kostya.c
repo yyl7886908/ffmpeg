@@ -26,7 +26,8 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
-#include "fdctdsp.h"
+#include "dct.h"
+#include "dsputil.h"
 #include "put_bits.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -194,9 +195,9 @@ typedef struct ProresContext {
     const uint8_t *quant_mat;
     const uint8_t *scantable;
 
-    void (*fdct)(FDCTDSPContext *fdsp, const uint16_t *src,
-                 int linesize, int16_t *block);
-    FDCTDSPContext fdsp;
+    void (* fdct)(DSPContext *dsp, const uint16_t *src,
+                  int linesize, int16_t *block);
+    DSPContext dsp;
 
     int mb_width, mb_height;
     int mbs_per_slice;
@@ -265,27 +266,27 @@ static void get_slice_data(ProresContext *ctx, const uint16_t *src,
                        mb_width * sizeof(*emu_buf));
         }
         if (!is_chroma) {
-            ctx->fdct(&ctx->fdsp, esrc, elinesize, blocks);
+            ctx->fdct(&ctx->dsp, esrc, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->fdct(&ctx->fdsp, esrc + 8, elinesize, blocks);
+                ctx->fdct(&ctx->dsp, esrc + 8, elinesize, blocks);
                 blocks += 64;
             }
-            ctx->fdct(&ctx->fdsp, esrc + elinesize * 4, elinesize, blocks);
+            ctx->fdct(&ctx->dsp, esrc + elinesize * 4, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->fdct(&ctx->fdsp, esrc + elinesize * 4 + 8, elinesize, blocks);
+                ctx->fdct(&ctx->dsp, esrc + elinesize * 4 + 8, elinesize, blocks);
                 blocks += 64;
             }
         } else {
-            ctx->fdct(&ctx->fdsp, esrc, elinesize, blocks);
+            ctx->fdct(&ctx->dsp, esrc, elinesize, blocks);
             blocks += 64;
-            ctx->fdct(&ctx->fdsp, esrc + elinesize * 4, elinesize, blocks);
+            ctx->fdct(&ctx->dsp, esrc + elinesize * 4, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->fdct(&ctx->fdsp, esrc + 8, elinesize, blocks);
+                ctx->fdct(&ctx->dsp, esrc + 8, elinesize, blocks);
                 blocks += 64;
-                ctx->fdct(&ctx->fdsp, esrc + elinesize * 4 + 8, elinesize, blocks);
+                ctx->fdct(&ctx->dsp, esrc + elinesize * 4 + 8, elinesize, blocks);
                 blocks += 64;
             }
         }
@@ -1065,7 +1066,7 @@ static av_cold int encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static void prores_fdct(FDCTDSPContext *fdsp, const uint16_t *src,
+static void prores_fdct(DSPContext *dsp, const uint16_t *src,
                         int linesize, int16_t *block)
 {
     int x, y;
@@ -1076,7 +1077,7 @@ static void prores_fdct(FDCTDSPContext *fdsp, const uint16_t *src,
             block[y * 8 + x] = tsrc[x];
         tsrc += linesize >> 1;
     }
-    fdsp->fdct(block);
+    dsp->fdct(block);
 }
 
 static av_cold int encode_init(AVCodecContext *avctx)
@@ -1095,7 +1096,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ctx->fdct      = prores_fdct;
     ctx->scantable = interlaced ? ff_prores_interlaced_scan
                                 : ff_prores_progressive_scan;
-    ff_fdctdsp_init(&ctx->fdsp, avctx);
+    ff_dsputil_init(&ctx->dsp, avctx);
 
     mps = ctx->mbs_per_slice;
     if (mps & (mps - 1)) {

@@ -29,13 +29,18 @@
    determine the profile */
 #define DV_PROFILE_BYTES (6*80) /* 6 DIF blocks */
 
+typedef struct DVwork_chunk {
+    uint16_t  buf_offset;
+    uint16_t  mb_coordinates[5];
+} DVwork_chunk;
+
 /*
- * AVDVProfile is used to express the differences between various
+ * DVprofile is used to express the differences between various
  * DV flavors. For now it's primarily used for differentiating
  * 525/60 and 625/50, but the plans are to use it for various
  * DV specs as well (e.g. SMPTE314M vs. IEC 61834).
  */
-typedef struct AVDVProfile {
+typedef struct DVprofile {
     int              dsf;                   /* value of the dsf in the DV header */
     int              video_stype;           /* stype for VAUX source pack */
     int              frame_size;            /* total size of one frame in bytes */
@@ -46,6 +51,8 @@ typedef struct AVDVProfile {
     int              height;                /* picture height in pixels */
     int              width;                 /* picture width in pixels */
     AVRational       sar[2];                /* sample aspect ratios for 4:3 and 16:9 */
+    DVwork_chunk    *work_chunks;           /* each thread gets its own chunk of frame to work on */
+    uint32_t        *idct_factor;           /* set of iDCT factor tables */
     enum AVPixelFormat pix_fmt;             /* picture pixel format */
     int              bpm;                   /* blocks per macroblock */
     const uint8_t   *block_sizes;           /* AC block sizes, in bits */
@@ -55,30 +62,17 @@ typedef struct AVDVProfile {
     int              audio_samples_dist[5]; /* how many samples are supposed to be */
                                             /* in each frame in a 5 frames window */
     const uint8_t  (*audio_shuffle)[9];     /* PCM shuffling table */
-} AVDVProfile;
+} DVprofile;
 
-const AVDVProfile* avpriv_dv_frame_profile2(AVCodecContext* codec, const AVDVProfile *sys,
-                                            const uint8_t* frame, unsigned buf_size);
-#if LIBAVCODEC_VERSION_MAJOR < 56
-const AVDVProfile *avpriv_dv_frame_profile(const AVDVProfile *sys,
-                                           const uint8_t* frame, unsigned buf_size);
-const AVDVProfile *avpriv_dv_codec_profile(AVCodecContext* codec);
-#endif
+const DVprofile* avpriv_dv_frame_profile(const DVprofile *sys,
+                                         const uint8_t* frame, unsigned buf_size);
+const DVprofile* avpriv_dv_frame_profile2(AVCodecContext* codec, const DVprofile *sys,
+                                  const uint8_t* frame, unsigned buf_size);
+const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec);
 
 /**
- * Get a DV profile for the provided compressed frame.
- *
- * @param sys the profile used for the previous frame, may be NULL
- * @param frame the compressed data buffer
- * @param buf_size size of the buffer in bytes
- * @return the DV profile for the supplied data or NULL on failure
+ *  Print all allowed DV profiles into logctx at specified logging level.
  */
-const AVDVProfile *av_dv_frame_profile(const AVDVProfile *sys,
-                                       const uint8_t *frame, unsigned buf_size);
-
-/**
- * Get a DV profile for the provided stream parameters.
- */
-const AVDVProfile *av_dv_codec_profile(int width, int height, enum AVPixelFormat pix_fmt);
+void ff_dv_print_profiles(void *logctx, int loglevel);
 
 #endif /* AVCODEC_DV_PROFILE_H */

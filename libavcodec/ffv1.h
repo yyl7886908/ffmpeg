@@ -35,6 +35,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/timer.h"
 #include "avcodec.h"
+#include "dsputil.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
@@ -52,6 +53,8 @@
 
 #define MAX_QUANT_TABLES 8
 #define MAX_CONTEXT_INPUTS 5
+
+extern const uint8_t ff_log2_run[41];
 
 typedef struct VlcState {
     int16_t drift;
@@ -114,6 +117,8 @@ typedef struct FFV1Context {
 
     int gob_count;
     int quant_table_count;
+
+    DSPContext dsp;
 
     struct FFV1Context *slice_context[MAX_SLICES];
     int slice_count;

@@ -148,7 +148,7 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
     }
 }
 
-typedef struct DelogoContext {
+typedef struct {
     const AVClass *class;
     int x, y, w, h, band, show;
 }  DelogoContext;

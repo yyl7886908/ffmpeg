@@ -23,7 +23,6 @@
 #include "dxva2_internal.h"
 #include "h264.h"
 #include "h264data.h"
-#include "mpegutils.h"
 
 struct dxva2_picture_context {
     DXVA_PicParams_H264   pp;
@@ -45,19 +44,19 @@ static void fill_picture_entry(DXVA_PicEntry_H264 *pic,
 static void fill_picture_parameters(struct dxva_context *ctx, const H264Context *h,
                                     DXVA_PicParams_H264 *pp)
 {
-    const H264Picture *current_picture = h->cur_pic_ptr;
+    const Picture *current_picture = h->cur_pic_ptr;
     int i, j;
 
     memset(pp, 0, sizeof(*pp));
     /* Configure current picture */
     fill_picture_entry(&pp->CurrPic,
-                       ff_dxva2_get_surface_index(ctx, &current_picture->f),
+                       ff_dxva2_get_surface_index(ctx, current_picture),
                        h->picture_structure == PICT_BOTTOM_FIELD);
     /* Configure the set of references */
     pp->UsedForReferenceFlags  = 0;
     pp->NonExistingFrameFlags  = 0;
     for (i = 0, j = 0; i < FF_ARRAY_ELEMS(pp->RefFrameList); i++) {
-        const H264Picture *r;
+        const Picture *r;
         if (j < h->short_ref_count) {
             r = h->short_ref[j++];
         } else {
@@ -67,7 +66,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
         }
         if (r) {
             fill_picture_entry(&pp->RefFrameList[i],
-                               ff_dxva2_get_surface_index(ctx, &r->f),
+                               ff_dxva2_get_surface_index(ctx, r),
                                r->long_ref != 0);
 
             if ((r->reference & PICT_TOP_FIELD) && r->field_poc[0] != INT_MAX)
@@ -116,8 +115,6 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     pp->bit_depth_chroma_minus8       = h->sps.bit_depth_chroma - 8;
     if (ctx->workaround & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG)
         pp->Reserved16Bits            = 0;
-    else if (ctx->workaround & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
-        pp->Reserved16Bits            = 0x34c;
     else
         pp->Reserved16Bits            = 3; /* FIXME is there a way to detect the right mode ? */
     pp->StatusReportFeedbackNumber    = 1 + ctx->report_id++;
@@ -197,18 +194,8 @@ static void fill_slice_short(DXVA_Slice_H264_Short *slice,
     slice->wBadSliceChopping     = 0;
 }
 
-static int get_refpic_index(const DXVA_PicParams_H264 *pp, int surface_index)
-{
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(pp->RefFrameList); i++) {
-        if ((pp->RefFrameList[i].bPicEntry & 0x7f) == surface_index)
-          return i;
-    }
-    return 0x7f;
-}
-
 static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
-                            const DXVA_PicParams_H264 *pp, unsigned position, unsigned size)
+                            unsigned position, unsigned size)
 {
     const H264Context *h = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
@@ -239,14 +226,10 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
         unsigned i;
         for (i = 0; i < FF_ARRAY_ELEMS(slice->RefPicList[list]); i++) {
             if (list < h->list_count && i < h->ref_count[list]) {
-                const H264Picture *r = &h->ref_list[list][i];
+                const Picture *r = &h->ref_list[list][i];
                 unsigned plane;
-                unsigned index;
-                if (ctx->workaround & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
-                    index = ff_dxva2_get_surface_index(ctx, &r->f);
-                else
-                    index = get_refpic_index(pp, ff_dxva2_get_surface_index(ctx, &r->f));
-                fill_picture_entry(&slice->RefPicList[list][i], index,
+                fill_picture_entry(&slice->RefPicList[list][i],
+                                   ff_dxva2_get_surface_index(ctx, r),
                                    r->reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
@@ -294,7 +277,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const H264Context *h = avctx->priv_data;
     const unsigned mb_count = h->mb_width * h->mb_height;
     struct dxva_context *ctx = avctx->hwaccel_context;
-    const H264Picture *current_picture = h->cur_pic_ptr;
+    const Picture *current_picture = h->cur_pic_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_H264_Short *slice = NULL;
     uint8_t  *dxva_data, *current, *end;
@@ -414,7 +397,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
 {
     const H264Context *h = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
-    const H264Picture *current_picture = h->cur_pic_ptr;
+    const Picture *current_picture = h->cur_pic_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     unsigned position;
 
@@ -431,7 +414,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
                          position, size);
     else
         fill_slice_long(avctx, &ctx_pic->slice_long[ctx_pic->slice_count],
-                        &ctx_pic->pp, position, size);
+                        position, size);
     ctx_pic->slice_count++;
 
     if (h->slice_type != AV_PICTURE_TYPE_I && h->slice_type != AV_PICTURE_TYPE_SI)
@@ -448,7 +431,7 @@ static int dxva2_h264_end_frame(AVCodecContext *avctx)
 
     if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
         return -1;
-    ret = ff_dxva2_common_end_frame(avctx, &h->cur_pic_ptr->f,
+    ret = ff_dxva2_common_end_frame(avctx, h->cur_pic_ptr,
                                     &ctx_pic->pp, sizeof(ctx_pic->pp),
                                     &ctx_pic->qm, sizeof(ctx_pic->qm),
                                     commit_bitstream_and_slice_buffer);
@@ -465,5 +448,5 @@ AVHWAccel ff_h264_dxva2_hwaccel = {
     .start_frame    = dxva2_h264_start_frame,
     .decode_slice   = dxva2_h264_decode_slice,
     .end_frame      = dxva2_h264_end_frame,
-    .frame_priv_data_size = sizeof(struct dxva2_picture_context),
+    .priv_data_size = sizeof(struct dxva2_picture_context),
 };

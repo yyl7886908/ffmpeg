@@ -12,7 +12,7 @@ CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
 LDLIBS := $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LDLIBS)
 
 EXAMPLES=       avio_reading                       \
-                decoding_encoding                  \
+                avcodec                            \
                 demuxing_decoding                  \
                 filtering_video                    \
                 filtering_audio                    \
@@ -22,7 +22,6 @@ EXAMPLES=       avio_reading                       \
                 resampling_audio                   \
                 scaling_video                      \
                 transcode_aac                      \
-                transcoding                        \
 
 OBJS=$(addsuffix .o,$(EXAMPLES))
 

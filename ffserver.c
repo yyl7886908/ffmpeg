@@ -38,7 +38,6 @@
 #include "libavformat/rtpdec.h"
 #include "libavformat/rtpproto.h"
 #include "libavformat/rtsp.h"
-#include "libavformat/rtspcodes.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"
 #include "libavformat/url.h"
@@ -56,9 +55,7 @@
 #include "libavutil/time.h"
 
 #include <stdarg.h>
-#if HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #if HAVE_POLL_H
@@ -225,7 +222,7 @@ typedef struct FFStream {
     IPAddressACL *acl;
     char dynamic_acl[1024];
     int nb_streams;
-    int prebuffer;      /* Number of milliseconds early to start */
+    int prebuffer;      /* Number of millseconds early to start */
     int64_t max_time;      /* Number of milliseconds to run */
     int send_on_key;
     AVStream *streams[MAX_STREAMS];
@@ -558,8 +555,7 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
     }
 
     tmp = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp)))
-        av_log(NULL, AV_LOG_WARNING, "setsockopt SO_REUSEADDR failed\n");
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp));
 
     my_addr->sin_family = AF_INET;
     if (bind (server_fd, (struct sockaddr *) my_addr, sizeof (*my_addr)) < 0) {
@@ -575,9 +571,7 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
         closesocket(server_fd);
         return -1;
     }
-
-    if (ff_socket_nonblock(server_fd, 1) < 0)
-        av_log(NULL, AV_LOG_WARNING, "ff_socket_nonblock failed\n");
+    ff_socket_nonblock(server_fd, 1);
 
     return server_fd;
 }
@@ -646,31 +640,25 @@ static int http_server(void)
     struct pollfd *poll_table, *poll_entry;
     HTTPContext *c, *c_next;
 
-    if(!(poll_table = av_mallocz_array(nb_max_http_connections + 2, sizeof(*poll_table)))) {
+    if(!(poll_table = av_mallocz((nb_max_http_connections + 2)*sizeof(*poll_table)))) {
         http_log("Impossible to allocate a poll table handling %d connections.\n", nb_max_http_connections);
         return -1;
     }
 
     if (my_http_addr.sin_port) {
         server_fd = socket_open_listen(&my_http_addr);
-        if (server_fd < 0) {
-            av_free(poll_table);
+        if (server_fd < 0)
             return -1;
-        }
     }
 
     if (my_rtsp_addr.sin_port) {
         rtsp_server_fd = socket_open_listen(&my_rtsp_addr);
-        if (rtsp_server_fd < 0) {
-            av_free(poll_table);
-            closesocket(server_fd);
+        if (rtsp_server_fd < 0)
             return -1;
-        }
     }
 
     if (!rtsp_server_fd && !server_fd) {
         http_log("HTTP and RTSP disabled.\n");
-        av_free(poll_table);
         return -1;
     }
 
@@ -749,10 +737,8 @@ static int http_server(void)
         do {
             ret = poll(poll_table, poll_entry - poll_table, delay);
             if (ret < 0 && ff_neterrno() != AVERROR(EAGAIN) &&
-                ff_neterrno() != AVERROR(EINTR)) {
-                av_free(poll_table);
+                ff_neterrno() != AVERROR(EINTR))
                 return -1;
-            }
         } while (ret < 0);
 
         cur_time = av_gettime() / 1000;
@@ -815,8 +801,7 @@ static void http_send_too_busy_reply(int fd)
                        "</body></html>\r\n",
                        nb_connections, nb_max_connections);
     av_assert0(len < sizeof(buffer));
-    if (send(fd, buffer, len, 0) < len)
-        av_log(NULL, AV_LOG_WARNING, "Could not send too-busy reply, send() failed\n");
+    send(fd, buffer, len, 0);
 }
 
 
@@ -834,8 +819,7 @@ static void new_connection(int server_fd, int is_rtsp)
         http_log("error during accept %s\n", strerror(errno));
         return;
     }
-    if (ff_socket_nonblock(fd, 1) < 0)
-        av_log(NULL, AV_LOG_WARNING, "ff_socket_nonblock failed\n");
+    ff_socket_nonblock(fd, 1);
 
     if (nb_connections >= nb_max_connections) {
         http_send_too_busy_reply(fd);
@@ -1340,7 +1324,7 @@ static void parse_acl_row(FFStream *stream, FFStream* feed, IPAddressACL *ext_ac
     get_arg(arg, sizeof(arg), &p);
 
     if (resolve_host(&acl.first, arg) != 0) {
-        fprintf(stderr, "%s:%d: ACL refers to invalid host or IP address '%s'\n",
+        fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
                 filename, line_num, arg);
         errors++;
     } else
@@ -1350,7 +1334,7 @@ static void parse_acl_row(FFStream *stream, FFStream* feed, IPAddressACL *ext_ac
 
     if (arg[0]) {
         if (resolve_host(&acl.last, arg) != 0) {
-            fprintf(stderr, "%s:%d: ACL refers to invalid host or IP address '%s'\n",
+            fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
                     filename, line_num, arg);
             errors++;
         }
@@ -1380,8 +1364,7 @@ static void parse_acl_row(FFStream *stream, FFStream* feed, IPAddressACL *ext_ac
                 naclp = &(*naclp)->next;
 
             *naclp = nacl;
-        } else
-            av_free(nacl);
+        }
     }
 }
 
@@ -1742,7 +1725,7 @@ static int http_parse_request(HTTPContext *c)
                                 *p = '\0';
                             snprintf(q, c->buffer_size,
                                           "HTTP/1.0 200 RTSP Redirect follows\r\n"
-                                          /* XXX: incorrect MIME type ? */
+                                          /* XXX: incorrect mime type ? */
                                           "Content-type: application/x-rtsp\r\n"
                                           "\r\n"
                                           "rtsp://%s:%d/%s\r\n", hostname, ntohs(my_rtsp_addr.sin_port), filename);
@@ -1763,10 +1746,7 @@ static int http_parse_request(HTTPContext *c)
                             q += strlen(q);
 
                             len = sizeof(my_addr);
-
-                            /* XXX: Should probably fail? */
-                            if (getsockname(c->fd, (struct sockaddr *)&my_addr, &len))
-                                http_log("getsockname() failed\n");
+                            getsockname(c->fd, (struct sockaddr *)&my_addr, &len);
 
                             /* XXX: should use a dynamic buffer */
                             sdp_data_size = prepare_sdp_description(stream,
@@ -1806,7 +1786,7 @@ static int http_parse_request(HTTPContext *c)
         /* if post, it means a feed is being sent */
         if (!stream->is_feed) {
             /* However it might be a status report from WMP! Let us log the
-             * data as it might come handy one day. */
+             * data as it might come in handy one day. */
             const char *logline = 0;
             int client_id = 0;
 
@@ -2297,7 +2277,7 @@ static int http_prepare_data(HTTPContext *c)
         c->fmt_ctx = *ctx;
         av_freep(&ctx);
         av_dict_copy(&(c->fmt_ctx.metadata), c->stream->metadata, 0);
-        c->fmt_ctx.streams = av_mallocz_array(c->stream->nb_streams, sizeof(AVStream *));
+        c->fmt_ctx.streams = av_mallocz(sizeof(AVStream *) * c->stream->nb_streams);
 
         for(i=0;i<c->stream->nb_streams;i++) {
             AVStream *src;
@@ -2328,7 +2308,7 @@ static int http_prepare_data(HTTPContext *c)
         c->fmt_ctx.pb->seekable = 0;
 
         /*
-         * HACK to avoid MPEG-PS muxer to spit many underflow errors
+         * HACK to avoid mpeg ps muxer to spit many underflow errors
          * Default value from FFmpeg
          * Try to set it using configuration option
          */
@@ -2759,11 +2739,8 @@ static int http_receive_data(HTTPContext *c)
         /* a packet has been received : write it in the store, except
            if header */
         if (c->data_count > FFM_PACKET_SIZE) {
-            /* XXX: use llseek or url_seek
-             * XXX: Should probably fail? */
-            if (lseek(c->feed_fd, feed->feed_write_index, SEEK_SET) == -1)
-                http_log("Seek to %"PRId64" failed\n", feed->feed_write_index);
-
+            /* XXX: use llseek or url_seek */
+            lseek(c->feed_fd, feed->feed_write_index, SEEK_SET);
             if (write(c->feed_fd, c->buffer, FFM_PACKET_SIZE) < 0) {
                 http_log("Error writing to feed file: %s\n", strerror(errno));
                 goto fail;
@@ -2859,9 +2836,44 @@ static void rtsp_reply_header(HTTPContext *c, enum RTSPStatusCode error_number)
     struct tm *tm;
     char buf2[32];
 
-    str = RTSP_STATUS_CODE2STRING(error_number);
-    if (!str)
+    switch(error_number) {
+    case RTSP_STATUS_OK:
+        str = "OK";
+        break;
+    case RTSP_STATUS_METHOD:
+        str = "Method Not Allowed";
+        break;
+    case RTSP_STATUS_BANDWIDTH:
+        str = "Not Enough Bandwidth";
+        break;
+    case RTSP_STATUS_SESSION:
+        str = "Session Not Found";
+        break;
+    case RTSP_STATUS_STATE:
+        str = "Method Not Valid in This State";
+        break;
+    case RTSP_STATUS_AGGREGATE:
+        str = "Aggregate operation not allowed";
+        break;
+    case RTSP_STATUS_ONLY_AGGREGATE:
+        str = "Only aggregate operation allowed";
+        break;
+    case RTSP_STATUS_TRANSPORT:
+        str = "Unsupported transport";
+        break;
+    case RTSP_STATUS_INTERNAL:
+        str = "Internal Server Error";
+        break;
+    case RTSP_STATUS_SERVICE:
+        str = "Service Unavailable";
+        break;
+    case RTSP_STATUS_VERSION:
+        str = "RTSP Version not supported";
+        break;
+    default:
         str = "Unknown Error";
+        break;
+    }
 
     avio_printf(c->pb, "RTSP/1.0 %d %s\r\n", error_number, str);
     avio_printf(c->pb, "CSeq: %d\r\n", c->seq);
@@ -3035,7 +3047,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     socklen_t len;
     struct sockaddr_in my_addr;
 
-    /* find which URL is asked */
+    /* find which url is asked */
     av_url_split(NULL, 0, NULL, 0, NULL, 0, NULL, path1, sizeof(path1), url);
     path = path1;
     if (*path == '/')
@@ -3053,7 +3065,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     return;
 
  found:
-    /* prepare the media description in SDP format */
+    /* prepare the media description in sdp format */
 
     /* get the host IP */
     len = sizeof(my_addr);
@@ -3112,7 +3124,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
     struct sockaddr_in dest_addr;
     RTSPActionServerSetup setup;
 
-    /* find which URL is asked */
+    /* find which url is asked */
     av_url_split(NULL, 0, NULL, 0, NULL, 0, NULL, path1, sizeof(path1), url);
     path = path1;
     if (*path == '/')
@@ -3154,7 +3166,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
                  random0, random1);
     }
 
-    /* find RTP session, and create it if none found */
+    /* find rtp session, and create it if none found */
     rtp_c = find_rtp_session(h->session_id);
     if (!rtp_c) {
         /* always prefer UDP */
@@ -3243,7 +3255,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
 }
 
 
-/* find an RTP connection by using the session ID. Check consistency
+/* find an rtp connection by using the session ID. Check consistency
    with filename */
 static HTTPContext *find_rtp_session_with_url(const char *url,
                                               const char *session_id)
@@ -3258,7 +3270,7 @@ static HTTPContext *find_rtp_session_with_url(const char *url,
     if (!rtp_c)
         return NULL;
 
-    /* find which URL is asked */
+    /* find which url is asked */
     av_url_split(NULL, 0, NULL, 0, NULL, 0, NULL, path1, sizeof(path1), url);
     path = path1;
     if (*path == '/')
@@ -3425,7 +3437,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     if (!st)
         goto fail;
     ctx->nb_streams = 1;
-    ctx->streams = av_mallocz_array(ctx->nb_streams, sizeof(AVStream *));
+    ctx->streams = av_mallocz(sizeof(AVStream *) * ctx->nb_streams);
     if (!ctx->streams)
       goto fail;
     ctx->streams[0] = st;
@@ -3489,7 +3501,6 @@ static int rtp_new_av_stream(HTTPContext *c,
     fail:
         if (h)
             ffurl_close(h);
-        av_free(st);
         av_free(ctx);
         return -1;
     }
@@ -3588,7 +3599,7 @@ static void remove_stream(FFStream *stream)
     }
 }
 
-/* specific MPEG4 handling : we extract the raw parameters */
+/* specific mpeg4 handling : we extract the raw parameters */
 static void extract_mpeg4_header(AVFormatContext *infile)
 {
     int mpeg4_count, i, size;
@@ -3813,7 +3824,7 @@ static void build_feed_streams(void)
                 http_log("Container doesn't support the required parameters\n");
                 exit(1);
             }
-            /* XXX: need better API */
+            /* XXX: need better api */
             av_freep(&s->priv_data);
             avio_close(s->pb);
             s->streams = NULL;
@@ -4310,7 +4321,7 @@ static int parse_ffconfig(const char *filename)
                     stream->fmt = NULL;
                 } else {
                     stream->stream_type = STREAM_TYPE_LIVE;
-                    /* JPEG cannot be used here, so use single frame MJPEG */
+                    /* jpeg cannot be used here, so use single frame jpeg */
                     if (!strcmp(arg, "jpeg"))
                         strcpy(arg, "mjpeg");
                     stream->fmt = ffserver_guess_format(arg, NULL, NULL);

@@ -30,6 +30,7 @@
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "dsputil.h"
 #include "internal.h"
 #include "mpegaudiodsp.h"
 
@@ -70,9 +71,9 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
     }
     memset(c->oldDSCF, 0, sizeof(c->oldDSCF));
     av_lfg_init(&c->rnd, 0xDEADBEEF);
-    ff_bswapdsp_init(&c->bdsp);
+    ff_dsputil_init(&c->dsp, avctx);
     ff_mpadsp_init(&c->mpadsp);
-    c->bdsp.bswap_buf((uint32_t *) buf, (const uint32_t *) avctx->extradata, 4);
+    c->dsp.bswap_buf((uint32_t*)buf, (const uint32_t*)avctx->extradata, 4);
     ff_mpc_init();
     init_get_bits(&gb, buf, 128);
 
@@ -229,8 +230,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
     av_fast_padded_malloc(&c->bits, &c->buf_size, buf_size);
     if (!c->bits)
         return AVERROR(ENOMEM);
-    c->bdsp.bswap_buf((uint32_t *) c->bits, (const uint32_t *) buf,
-                      buf_size >> 2);
+    c->dsp.bswap_buf((uint32_t *)c->bits, (const uint32_t *)buf, buf_size >> 2);
     init_get_bits(&gb, c->bits, buf_size * 8);
     skip_bits_long(&gb, skip);
 

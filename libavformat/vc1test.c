@@ -51,12 +51,12 @@ static int vc1t_read_header(AVFormatContext *s)
 
     frames = avio_rl24(pb);
     if(avio_r8(pb) != 0xC5 || avio_rl32(pb) != 4)
-        return AVERROR_INVALIDDATA;
+        return -1;
 
     /* init video codec */
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return AVERROR(ENOMEM);
+        return -1;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = AV_CODEC_ID_WMV3;
@@ -66,7 +66,7 @@ static int vc1t_read_header(AVFormatContext *s)
     st->codec->height = avio_rl32(pb);
     st->codec->width = avio_rl32(pb);
     if(avio_rl32(pb) != 0xC)
-        return AVERROR_INVALIDDATA;
+        return -1;
     avio_skip(pb, 8);
     fps = avio_rl32(pb);
     if(fps == 0xFFFFFFFF)

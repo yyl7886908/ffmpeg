@@ -2,11 +2,10 @@
 
 SRC_PATH="${1}"
 DOXYFILE="${2}"
-DOXYGEN="${3}"
 
-shift 3
+shift 2
 
-$DOXYGEN - <<EOF
+doxygen - <<EOF
 @INCLUDE        = ${DOXYFILE}
 INPUT           = $@
 EXAMPLE_PATH    = ${SRC_PATH}/doc/examples

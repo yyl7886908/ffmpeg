@@ -56,7 +56,7 @@ enum var_name {
     VARS_NB
 };
 
-typedef struct AspectContext {
+typedef struct {
     const AVClass *class;
     AVRational dar;
     AVRational sar;

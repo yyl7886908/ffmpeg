@@ -24,12 +24,10 @@
  * Duck TrueMotion2 decoder.
  */
 
-#include <inttypes.h>
-
 #include "avcodec.h"
-#include "bswapdsp.h"
 #include "bytestream.h"
 #include "get_bits.h"
+#include "dsputil.h"
 #include "internal.h"
 
 #define TM2_ESCAPE 0x80000000
@@ -63,7 +61,7 @@ typedef struct TM2Context {
     AVFrame *pic;
 
     GetBitContext gb;
-    BswapDSPContext bdsp;
+    DSPContext dsp;
 
     uint8_t *buffer;
     int buffer_size;
@@ -248,8 +246,7 @@ static inline int tm2_read_header(TM2Context *ctx, const uint8_t *buf)
     case TM2_NEW_HEADER_MAGIC:
         return 0;
     default:
-        av_log(ctx->avctx, AV_LOG_ERROR, "Not a TM2 header: 0x%08"PRIX32"\n",
-               magic);
+        av_log(ctx->avctx, AV_LOG_ERROR, "Not a TM2 header: 0x%08X\n", magic);
         return AVERROR_INVALIDDATA;
     }
 }
@@ -262,8 +259,7 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id)
     d  = get_bits(&ctx->gb, 9);
     mb = get_bits(&ctx->gb, 5);
 
-    av_assert2(mb < 32);
-    if ((d < 1) || (d > TM2_DELTAS) || (mb < 1)) {
+    if ((d < 1) || (d > TM2_DELTAS) || (mb < 1) || (mb > 32)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect delta table: %i deltas x %i bits\n", d, mb);
         return AVERROR_INVALIDDATA;
     }
@@ -889,8 +885,7 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = ff_reget_buffer(avctx, p)) < 0)
         return ret;
 
-    l->bdsp.bswap_buf((uint32_t *) l->buffer, (const uint32_t *) buf,
-                      buf_size >> 2);
+    l->dsp.bswap_buf((uint32_t*)l->buffer, (const uint32_t*)buf, buf_size >> 2);
 
     if ((ret = tm2_read_header(l, l->buffer)) < 0) {
         return ret;
@@ -941,7 +936,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!l->pic)
         return AVERROR(ENOMEM);
 
-    ff_bswapdsp_init(&l->bdsp);
+    ff_dsputil_init(&l->dsp, avctx);
 
     l->last  = av_malloc_array(w >> 2, 4 * sizeof(*l->last) );
     l->clast = av_malloc_array(w >> 2, 4 * sizeof(*l->clast));

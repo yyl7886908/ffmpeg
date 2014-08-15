@@ -23,8 +23,7 @@
 #include "rtpdec_formats.h"
 #include "libavutil/avstring.h"
 
-static int ilbc_parse_fmtp(AVFormatContext *s,
-                           AVStream *stream, PayloadContext *data,
+static int ilbc_parse_fmtp(AVStream *stream, PayloadContext *data,
                            char *attr, char *value)
 {
     if (!strcmp(attr, "mode")) {
@@ -37,7 +36,7 @@ static int ilbc_parse_fmtp(AVFormatContext *s,
             stream->codec->block_align = 50;
             break;
         default:
-            av_log(s, AV_LOG_ERROR, "Unsupported iLBC mode %d\n", mode);
+            av_log(NULL, AV_LOG_ERROR, "Unsupported iLBC mode %d\n", mode);
             return AVERROR(EINVAL);
         }
     }
@@ -55,7 +54,7 @@ static int ilbc_parse_sdp_line(AVFormatContext *s, int st_index,
     st = s->streams[st_index];
 
     if (av_strstart(line, "fmtp:", &p)) {
-        int ret = ff_parse_fmtp(s, st, data, p, ilbc_parse_fmtp);
+        int ret = ff_parse_fmtp(st, data, p, ilbc_parse_fmtp);
         if (ret < 0)
             return ret;
         if (!st->codec->block_align) {

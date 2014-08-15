@@ -53,7 +53,7 @@ struct dshow_ctx {
 
     int eof;
 
-    int64_t curbufsize[2];
+    int64_t curbufsize;
     unsigned int video_frame_num;
 
     IMediaControl *control;
@@ -89,7 +89,7 @@ static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
             case 24:
                 return AV_PIX_FMT_BGR24;
             case 32:
-                return AV_PIX_FMT_0RGB32;
+                return AV_PIX_FMT_RGB32;
         }
     }
     return avpriv_find_pix_fmt(ff_raw_pix_fmt_tags, biCompression); // all others
@@ -180,16 +180,16 @@ static char *dup_wchar_to_utf8(wchar_t *w)
     return s;
 }
 
-static int shall_we_drop(AVFormatContext *s, int index, enum dshowDeviceType devtype)
+static int shall_we_drop(AVFormatContext *s)
 {
     struct dshow_ctx *ctx = s->priv_data;
     static const uint8_t dropscore[] = {62, 75, 87, 100};
     const int ndropscores = FF_ARRAY_ELEMS(dropscore);
-    unsigned int buffer_fullness = (ctx->curbufsize[index]*100)/s->max_picture_buffer;
+    unsigned int buffer_fullness = (ctx->curbufsize*100)/s->max_picture_buffer;
 
     if(dropscore[++ctx->video_frame_num%ndropscores] <= buffer_fullness) {
         av_log(s, AV_LOG_ERROR,
-              "real-time buffer[%s] too full (%d%% of size: %d)! frame dropped!\n", ctx->device_name[devtype], buffer_fullness, s->max_picture_buffer);
+              "real-time buffer %d%% full! frame dropped!\n", buffer_fullness);
         return 1;
     }
 
@@ -197,7 +197,7 @@ static int shall_we_drop(AVFormatContext *s, int index, enum dshowDeviceType dev
 }
 
 static void
-callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, enum dshowDeviceType devtype)
+callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time)
 {
     AVFormatContext *s = priv_data;
     struct dshow_ctx *ctx = s->priv_data;
@@ -207,7 +207,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, e
 
     WaitForSingleObject(ctx->mutex, INFINITE);
 
-    if(shall_we_drop(s, index, devtype))
+    if(shall_we_drop(s))
         goto fail;
 
     pktl_next = av_mallocz(sizeof(AVPacketList));
@@ -225,7 +225,8 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, e
 
     for(ppktl = &ctx->pktl ; *ppktl ; ppktl = &(*ppktl)->next);
     *ppktl = pktl_next;
-    ctx->curbufsize[index] += buf_size;
+
+    ctx->curbufsize += buf_size;
 
     SetEvent(ctx->event[1]);
     ReleaseMutex(ctx->mutex);
@@ -579,9 +580,8 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
             }
         }
         if (devtype == AudioDevice && ctx->audio_buffer_size) {
-            if (dshow_set_audio_buffer_size(avctx, pin) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "unable to set audio buffer size %d to pin, using pin anyway...", ctx->audio_buffer_size);
-            }
+            if (dshow_set_audio_buffer_size(avctx, pin) < 0)
+                goto next;
         }
 
         if (IPin_EnumMediaTypes(pin, &types) != S_OK)
@@ -773,7 +773,6 @@ dshow_add_device(AVFormatContext *avctx,
         codec->codec_type = AVMEDIA_TYPE_VIDEO;
         codec->width      = bih->biWidth;
         codec->height     = bih->biHeight;
-        codec->codec_tag  = bih->biCompression;
         codec->pix_fmt    = dshow_pixfmt(bih->biCompression, bih->biBitCount);
         if (bih->biCompression == MKTAG('H', 'D', 'Y', 'C')) {
             av_log(avctx, AV_LOG_DEBUG, "attempt to use full range for HDYC...\n");
@@ -944,8 +943,7 @@ static int dshow_read_header(AVFormatContext *avctx)
             goto error;
         }
     }
-    ctx->curbufsize[0] = 0;
-    ctx->curbufsize[1] = 0;
+
     ctx->mutex = CreateMutex(NULL, 0, NULL);
     if (!ctx->mutex) {
         av_log(avctx, AV_LOG_ERROR, "Could not create Mutex\n");
@@ -1039,7 +1037,7 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
             *pkt = pktl->pkt;
             ctx->pktl = ctx->pktl->next;
             av_free(pktl);
-            ctx->curbufsize[pkt->stream_index] -= pkt->size;
+            ctx->curbufsize -= pkt->size;
         }
         ResetEvent(ctx->event[1]);
         ReleaseMutex(ctx->mutex);
@@ -1083,7 +1081,6 @@ static const AVClass dshow_class = {
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
 AVInputFormat ff_dshow_demuxer = {

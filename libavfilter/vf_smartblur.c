@@ -201,7 +201,7 @@ static void blur(uint8_t       *dst, const int dst_linesize,
                     if (diff > 2 * threshold)
                         dst[x + y * dst_linesize] = orig;
                     else if (diff > threshold)
-                        /* add 'diff' and subtract 'threshold' from 'filtered' */
+                        /* add 'diff' and substract 'threshold' from 'filtered' */
                         dst[x + y * dst_linesize] = orig - threshold;
                 } else {
                     if (-diff > 2 * threshold)
@@ -223,13 +223,13 @@ static void blur(uint8_t       *dst, const int dst_linesize,
                     if (diff <= -threshold)
                         dst[x + y * dst_linesize] = orig;
                     else if (diff <= -2 * threshold)
-                        /* subtract 'diff' and 'threshold' from 'orig' */
+                        /* substract 'diff' and 'threshold' from 'orig' */
                         dst[x + y * dst_linesize] = filtered - threshold;
                 } else {
                     if (diff >= threshold)
                         dst[x + y * dst_linesize] = orig;
                     else if (diff >= 2 * threshold)
-                        /* add 'threshold' and subtract 'diff' from 'orig' */
+                        /* add 'threshold' and substract 'diff' from 'orig' */
                         dst[x + y * dst_linesize] = filtered + threshold;
                 }
             }

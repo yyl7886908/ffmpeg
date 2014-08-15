@@ -67,9 +67,9 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-#define ABS(a) ((a) > 0 ? (a) : -(a))
+#define ABS(a) (((a) ^ ((a) >> 31)) - ((a) >> 31))
 
-static int diff_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
+static int diff_c(const uint8_t *a, const uint8_t *b, int s)
 {
     int i, j, diff = 0;
 
@@ -83,7 +83,7 @@ static int diff_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
     return diff;
 }
 
-static int comb_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
+static int comb_c(const uint8_t *a, const uint8_t *b, int s)
 {
     int i, j, comb = 0;
 
@@ -98,7 +98,7 @@ static int comb_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
     return comb;
 }
 
-static int var_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
+static int var_c(const uint8_t *a, const uint8_t *b, int s)
 {
     int i, j, var = 0;
 
@@ -126,21 +126,20 @@ static int alloc_metrics(PullupContext *s, PullupField *f)
     return 0;
 }
 
-static void free_field_queue(PullupField *head)
+static void free_field_queue(PullupField *head, PullupField **last)
 {
     PullupField *f = head;
-    do {
-        PullupField *next;
-        if (!f)
-            break;
+    while (f) {
         av_free(f->diffs);
         av_free(f->combs);
         av_free(f->vars);
-        next = f->next;
-        memset(f, 0, sizeof(*f)); // clear all pointers to avoid stale ones
-        av_free(f);
-        f = next;
-    } while (f != head);
+        if (f == *last) {
+            av_freep(last);
+            break;
+        }
+        f = f->next;
+        av_freep(&f->prev);
+    };
 }
 
 static PullupField *make_field_queue(PullupContext *s, int len)
@@ -159,14 +158,14 @@ static PullupField *make_field_queue(PullupContext *s, int len)
     for (; len > 0; len--) {
         f->next = av_mallocz(sizeof(*f->next));
         if (!f->next) {
-            free_field_queue(head);
+            free_field_queue(head, &f);
             return NULL;
         }
 
         f->next->prev = f;
         f = f->next;
         if (alloc_metrics(s, f) < 0) {
-            free_field_queue(head);
+            free_field_queue(head, &f);
             return NULL;
         }
     }
@@ -256,8 +255,6 @@ static int alloc_buffer(PullupContext *s, PullupBuffer *b)
     for (i = 0; i < s->nb_planes; i++) {
         b->planes[i] = av_malloc(s->planeheight[i] * s->planewidth[i]);
     }
-    if (s->nb_planes == 1)
-        b->planes[1] = av_malloc(4*256);
 
     return 0;
 }
@@ -531,7 +528,7 @@ static void pullup_release_frame(PullupFrame *f)
 
 static void compute_metric(PullupContext *s, int *dest,
                            PullupField *fa, int pa, PullupField *fb, int pb,
-                           int (*func)(const uint8_t *, const uint8_t *, ptrdiff_t))
+                           int (*func)(const uint8_t *, const uint8_t *, int))
 {
     int mp = s->metric_plane;
     int xstep = 8;
@@ -739,8 +736,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     PullupContext *s = ctx->priv;
     int i;
 
-    free_field_queue(s->head);
-    s->last = NULL;
+    free_field_queue(s->head, &s->last);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->buffers); i++) {
         av_freep(&s->buffers[i].planes[0]);

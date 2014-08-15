@@ -20,8 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <inttypes.h>
-
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
@@ -271,18 +269,18 @@ static int dxtory_decode_v2_565(AVCodecContext *avctx, AVFrame *pic,
         slice_size = bytestream2_get_le32(&gb);
         if (slice_size > src_size - off) {
             av_log(avctx, AV_LOG_ERROR,
-                   "invalid slice size %"PRIu32" (only %"PRIu32" bytes left)\n",
+                   "invalid slice size %d (only %d bytes left)\n",
                    slice_size, src_size - off);
             return AVERROR_INVALIDDATA;
         }
         if (slice_size <= 16) {
-            av_log(avctx, AV_LOG_ERROR, "invalid slice size %"PRIu32"\n", slice_size);
+            av_log(avctx, AV_LOG_ERROR, "invalid slice size %d\n", slice_size);
             return AVERROR_INVALIDDATA;
         }
 
         if (AV_RL32(src + off) != slice_size - 16) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Slice sizes mismatch: got %"PRIu32" instead of %"PRIu32"\n",
+                   "Slice sizes mismatch: got %d instead of %d\n",
                    AV_RL32(src + off), slice_size - 16);
         }
         init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
@@ -352,19 +350,18 @@ static int dxtory_decode_v2_rgb(AVCodecContext *avctx, AVFrame *pic,
         slice_size = bytestream2_get_le32(&gb);
         if (slice_size > src_size - off) {
             av_log(avctx, AV_LOG_ERROR,
-                   "invalid slice size %"PRIu32" (only %"PRIu32" bytes left)\n",
+                   "invalid slice size %d (only %d bytes left)\n",
                    slice_size, src_size - off);
             return AVERROR_INVALIDDATA;
         }
         if (slice_size <= 16) {
-            av_log(avctx, AV_LOG_ERROR, "invalid slice size %"PRIu32"\n",
-                   slice_size);
+            av_log(avctx, AV_LOG_ERROR, "invalid slice size %d\n", slice_size);
             return AVERROR_INVALIDDATA;
         }
 
         if (AV_RL32(src + off) != slice_size - 16) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Slice sizes mismatch: got %"PRIu32" instead of %"PRIu32"\n",
+                   "Slice sizes mismatch: got %d instead of %d\n",
                    AV_RL32(src + off), slice_size - 16);
         }
         init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
@@ -451,18 +448,18 @@ static int dxtory_decode_v2_410(AVCodecContext *avctx, AVFrame *pic,
         slice_height = (next_y & ~3) - (cur_y & ~3);
         if (slice_size > src_size - off) {
             av_log(avctx, AV_LOG_ERROR,
-                   "invalid slice size %"PRIu32" (only %"PRIu32" bytes left)\n",
+                   "invalid slice size %d (only %d bytes left)\n",
                    slice_size, src_size - off);
             return AVERROR_INVALIDDATA;
         }
         if (slice_size <= 16) {
-            av_log(avctx, AV_LOG_ERROR, "invalid slice size %"PRIu32"\n", slice_size);
+            av_log(avctx, AV_LOG_ERROR, "invalid slice size %d\n", slice_size);
             return AVERROR_INVALIDDATA;
         }
 
         if (AV_RL32(src + off) != slice_size - 16) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Slice sizes mismatch: got %"PRIu32" instead of %"PRIu32"\n",
+                   "Slice sizes mismatch: got %d instead of %d\n",
                    AV_RL32(src + off), slice_size - 16);
         }
         init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
@@ -555,18 +552,18 @@ static int dxtory_decode_v2_420(AVCodecContext *avctx, AVFrame *pic,
         slice_height = (next_y & ~1) - (cur_y & ~1);
         if (slice_size > src_size - off) {
             av_log(avctx, AV_LOG_ERROR,
-                   "invalid slice size %"PRIu32" (only %"PRIu32" bytes left)\n",
+                   "invalid slice size %d (only %d bytes left)\n",
                    slice_size, src_size - off);
             return AVERROR_INVALIDDATA;
         }
         if (slice_size <= 16) {
-            av_log(avctx, AV_LOG_ERROR, "invalid slice size %"PRIu32"\n", slice_size);
+            av_log(avctx, AV_LOG_ERROR, "invalid slice size %d\n", slice_size);
             return AVERROR_INVALIDDATA;
         }
 
         if (AV_RL32(src + off) != slice_size - 16) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Slice sizes mismatch: got %"PRIu32" instead of %"PRIu32"\n",
+                   "Slice sizes mismatch: got %d instead of %d\n",
                    AV_RL32(src + off), slice_size - 16);
         }
         init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
@@ -648,18 +645,18 @@ static int dxtory_decode_v2_444(AVCodecContext *avctx, AVFrame *pic,
         slice_size = bytestream2_get_le32(&gb);
         if (slice_size > src_size - off) {
             av_log(avctx, AV_LOG_ERROR,
-                   "invalid slice size %"PRIu32" (only %"PRIu32" bytes left)\n",
+                   "invalid slice size %d (only %d bytes left)\n",
                    slice_size, src_size - off);
             return AVERROR_INVALIDDATA;
         }
         if (slice_size <= 16) {
-            av_log(avctx, AV_LOG_ERROR, "invalid slice size %"PRIu32"\n", slice_size);
+            av_log(avctx, AV_LOG_ERROR, "invalid slice size %d\n", slice_size);
             return AVERROR_INVALIDDATA;
         }
 
         if (AV_RL32(src + off) != slice_size - 16) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Slice sizes mismatch: got %"PRIu32" instead of %"PRIu32"\n",
+                   "Slice sizes mismatch: got %d instead of %d\n",
                    AV_RL32(src + off), slice_size - 16);
         }
         init_get_bits(&gb2, src + off + 16, (slice_size - 16) * 8);
@@ -731,7 +728,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         ret = dxtory_decode_v2_565(avctx, pic, src + 16, avpkt->size - 16, 0);
         break;
     default:
-        avpriv_request_sample(avctx, "Frame header %"PRIX32, AV_RB32(src));
+        avpriv_request_sample(avctx, "Frame header %X", AV_RB32(src));
         return AVERROR_PATCHWELCOME;
     }
 

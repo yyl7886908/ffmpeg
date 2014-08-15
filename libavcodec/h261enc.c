@@ -28,7 +28,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
-#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h261.h"

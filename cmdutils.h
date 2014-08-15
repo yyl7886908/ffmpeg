@@ -24,13 +24,12 @@
 
 #include <stdint.h>
 
-#include "config.h"
 #include "libavcodec/avcodec.h"
 #include "libavfilter/avfilter.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 
-#ifdef _WIN32
+#ifdef __MINGW32__
 #undef main /* We don't want SDL to override our main() */
 #endif
 
@@ -59,7 +58,7 @@ void register_exit(void (*cb)(int ret));
 /**
  * Wraps exit with a program-specific cleanup routine.
  */
-void exit_program(int ret) av_noreturn;
+void exit_program(int ret);
 
 /**
  * Initialize the cmdutils option system, in particular
@@ -431,17 +430,10 @@ int show_license(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the formats supported by the
- * program (including devices).
- * This option processing function does not utilize the arguments.
- */
-int show_formats(void *optctx, const char *opt, const char *arg);
-
-/**
- * Print a listing containing all the devices supported by the
  * program.
  * This option processing function does not utilize the arguments.
  */
-int show_devices(void *optctx, const char *opt, const char *arg);
+int show_formats(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the codecs supported by the

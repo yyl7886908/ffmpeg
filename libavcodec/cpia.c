@@ -76,15 +76,15 @@ static int cpia_decode_frame(AVCodecContext *avctx,
 
     // currently unsupported properties
     if (header[17] == SUBSAMPLE_422) {
-        avpriv_report_missing_feature(avctx, "4:2:2 subsampling");
+        av_log(avctx, AV_LOG_ERROR, "Unsupported subsample!\n");
         return AVERROR_PATCHWELCOME;
     }
     if (header[18] == YUVORDER_UYVY) {
-        avpriv_report_missing_feature(avctx, "YUV byte order UYVY");
+        av_log(avctx, AV_LOG_ERROR, "Unsupported YUV byte order!\n");
         return AVERROR_PATCHWELCOME;
     }
     if (header[29] == DECIMATION_ENAB) {
-        avpriv_report_missing_feature(avctx, "Decimation");
+        av_log(avctx, AV_LOG_ERROR, "Decimation unsupported!\n");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -114,7 +114,7 @@ static int cpia_decode_frame(AVCodecContext *avctx,
 
         if (src_size < linelength) {
             av_frame_set_decode_error_flags(frame, FF_DECODE_ERROR_INVALID_BITSTREAM);
-            av_log(avctx, AV_LOG_WARNING, "Frame ended unexpectedly!\n");
+            av_log(avctx, AV_LOG_WARNING, "Frame ended enexpectedly!\n");
             break;
         }
         if (src[linelength - 1] != EOL) {

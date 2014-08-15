@@ -28,7 +28,6 @@
 typedef struct H264BSFContext {
     uint8_t  length_size;
     uint8_t  first_idr;
-    uint8_t  idr_sps_pps_seen;
     int      extradata_parsed;
 } H264BSFContext;
 
@@ -156,7 +155,6 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
             return ret;
         ctx->length_size      = ret;
         ctx->first_idr        = 1;
-        ctx->idr_sps_pps_seen = 0;
         ctx->extradata_parsed = 1;
     }
 
@@ -176,12 +174,8 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         if (buf + nal_size > buf_end || nal_size < 0)
             goto fail;
 
-        if (ctx->first_idr && (unit_type == 7 || unit_type == 8))
-            ctx->idr_sps_pps_seen = 1;
-
-
-        /* prepend only to the first type 5 NAL unit of an IDR picture, if no sps/pps are already present */
-        if (ctx->first_idr && unit_type == 5 && !ctx->idr_sps_pps_seen) {
+        /* prepend only to the first type 5 NAL unit of an IDR picture */
+        if (ctx->first_idr && unit_type == 5) {
             if ((ret=alloc_and_copy(poutbuf, poutbuf_size,
                                avctx->extradata, avctx->extradata_size,
                                buf, nal_size)) < 0)
@@ -191,10 +185,8 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
             if ((ret=alloc_and_copy(poutbuf, poutbuf_size,
                                NULL, 0, buf, nal_size)) < 0)
                 goto fail;
-            if (!ctx->first_idr && unit_type == 1) {
+            if (!ctx->first_idr && unit_type == 1)
                 ctx->first_idr = 1;
-                ctx->idr_sps_pps_seen = 0;
-            }
         }
 
         buf        += nal_size;

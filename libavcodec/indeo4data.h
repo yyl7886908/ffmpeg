@@ -28,9 +28,8 @@
 #define AVCODEC_INDEO4DATA_H
 
 #include <stdint.h>
-
+#include "dsputil.h"
 #include "ivi_common.h"
-#include "mathops.h"
 
 /**
  *  standard picture dimensions

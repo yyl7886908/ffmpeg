@@ -24,16 +24,13 @@
  * 4XM codec.
  */
 
-#include <inttypes.h>
-
 #include "libavutil/avassert.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "blockdsp.h"
-#include "bswapdsp.h"
 #include "bytestream.h"
+#include "dsputil.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -134,8 +131,7 @@ typedef struct CFrameBuffer {
 
 typedef struct FourXContext {
     AVCodecContext *avctx;
-    BlockDSPContext bdsp;
-    BswapDSPContext bbdsp;
+    DSPContext dsp;
     uint16_t *frame_buffer;
     uint16_t *last_frame_buffer;
     GetBitContext pre_gb;          ///< ac/dc prefix
@@ -460,8 +456,8 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
                           bitstream_size);
     if (!f->bitstream_buffer)
         return AVERROR(ENOMEM);
-    f->bbdsp.bswap_buf(f->bitstream_buffer, (const uint32_t *) (buf + extra),
-                       bitstream_size / 4);
+    f->dsp.bswap_buf(f->bitstream_buffer, (const uint32_t*)(buf + extra),
+                     bitstream_size / 4);
     init_get_bits(&f->gb, f->bitstream_buffer, 8 * bitstream_size);
 
     wordstream_offset = extra + bitstream_size;
@@ -594,7 +590,7 @@ static int decode_i_mb(FourXContext *f)
     int ret;
     int i;
 
-    f->bdsp.clear_blocks(f->block[0]);
+    f->dsp.clear_blocks(f->block[0]);
 
     for (i = 0; i < 6; i++)
         if ((ret = decode_i_block(f, f->block[i])) < 0)
@@ -799,8 +795,8 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
                           prestream_size);
     if (!f->bitstream_buffer)
         return AVERROR(ENOMEM);
-    f->bbdsp.bswap_buf(f->bitstream_buffer, (const uint32_t *) prestream,
-                       prestream_size / 4);
+    f->dsp.bswap_buf(f->bitstream_buffer, (const uint32_t*)prestream,
+                     prestream_size / 4);
     init_get_bits(&f->pre_gb, f->bitstream_buffer, 8 * prestream_size);
 
     f->last_dc = 0 * 128 * 8 * 8;
@@ -835,7 +831,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     av_assert0(avctx->width % 16 == 0 && avctx->height % 16 == 0);
 
     if (buf_size < AV_RL32(buf + 4) + 8) {
-        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %"PRIu32"\n",
+        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n",
                buf_size, AV_RL32(buf + 4));
         return AVERROR_INVALIDDATA;
     }
@@ -1000,8 +996,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     f->version = AV_RL32(avctx->extradata) >> 16;
-    ff_blockdsp_init(&f->bdsp, avctx);
-    ff_bswapdsp_init(&f->bbdsp);
+    ff_dsputil_init(&f->dsp, avctx);
     f->avctx = avctx;
     init_vlcs(f);
 

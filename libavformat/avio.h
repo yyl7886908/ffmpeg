@@ -146,13 +146,6 @@ typedef struct AVIOContext {
      * This field is internal to libavformat and access from outside is not allowed.
      */
     int writeout_count;
-
-    /**
-     * Original buffer size
-     * used internally after probing and ensure seekback to reset the buffer size
-     * This field is internal to libavformat and access from outside is not allowed.
-     */
-    int orig_buffer_size;
 } AVIOContext;
 
 /* unbuffered I/O */
@@ -499,13 +492,5 @@ int     avio_pause(AVIOContext *h, int pause);
  */
 int64_t avio_seek_time(AVIOContext *h, int stream_index,
                        int64_t timestamp, int flags);
-
-/**
- * Read contents of h into print buffer, up to max_size bytes, or up to EOF.
- *
- * @return 0 for success (max_size bytes read or EOF reached), negative error
- * code otherwise
- */
-int avio_read_to_bprint(AVIOContext *h, struct AVBPrint *pb, size_t max_size);
 
 #endif /* AVFORMAT_AVIO_H */

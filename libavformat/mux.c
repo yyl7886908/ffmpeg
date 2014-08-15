@@ -102,17 +102,20 @@ static void frac_add(AVFrac *f, int64_t incr)
     f->num = num;
 }
 
-AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precision)
+AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precission)
 {
     AVRational q;
     int j;
 
-    q = st->time_base;
-
+    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        q = (AVRational){1, st->codec->sample_rate};
+    } else {
+        q = st->codec->time_base;
+    }
     for (j=2; j<14; j+= 1+(j>2))
-        while (q.den / q.num < min_precision && q.num % j == 0)
+        while (q.den / q.num < min_precission && q.num % j == 0)
             q.num /= j;
-    while (q.den / q.num < min_precision && q.den < (1<<24))
+    while (q.den / q.num < min_precission && q.den < (1<<24))
         q.den <<= 1;
 
     return q;
@@ -222,7 +225,6 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     AVDictionary *tmp = NULL;
     AVCodecContext *codec = NULL;
     AVOutputFormat *of = s->oformat;
-    AVDictionaryEntry *e;
 
     if (options)
         av_dict_copy(&tmp, *options, 0);
@@ -230,13 +232,8 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
     if (s->priv_data && s->oformat->priv_class && *(const AVClass**)s->priv_data==s->oformat->priv_class &&
-        (ret = av_opt_set_dict2(s->priv_data, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
+        (ret = av_opt_set_dict(s->priv_data, &tmp)) < 0)
         goto fail;
-
-#if FF_API_LAVF_BITEXACT
-    if (s->nb_streams && s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)
-        s->flags |= AVFMT_FLAG_BITEXACT;
-#endif
 
     // some sanity checks
     if (s->nb_streams == 0 && !(of->flags & AVFMT_NOSTREAMS)) {
@@ -248,25 +245,6 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     for (i = 0; i < s->nb_streams; i++) {
         st    = s->streams[i];
         codec = st->codec;
-
-#if FF_API_LAVF_CODEC_TB
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (!st->time_base.num && codec->time_base.num) {
-            av_log(s, AV_LOG_WARNING, "Using AVStream.codec.time_base as a "
-                   "timebase hint to the muxer is deprecated. Set "
-                   "AVStream.time_base instead.\n");
-            avpriv_set_pts_info(st, 64, codec->time_base.num, codec->time_base.den);
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
-        if (!st->time_base.num) {
-            /* fall back on the default timebase values */
-            if (codec->codec_type == AVMEDIA_TYPE_AUDIO && codec->sample_rate)
-                avpriv_set_pts_info(st, 64, 1, codec->sample_rate);
-            else
-                avpriv_set_pts_info(st, 33, 1, 90000);
-        }
 
         switch (codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -280,6 +258,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                      av_get_bits_per_sample(codec->codec_id) >> 3;
             break;
         case AVMEDIA_TYPE_VIDEO:
+            if (codec->time_base.num <= 0 ||
+                codec->time_base.den <= 0) { //FIXME audio too?
+                av_log(s, AV_LOG_ERROR, "time base not set\n");
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+
             if ((codec->width <= 0 || codec->height <= 0) &&
                 !(of->flags & AVFMT_NODIMENSIONS)) {
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
@@ -349,20 +334,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (of->priv_class) {
             *(const AVClass **)s->priv_data = of->priv_class;
             av_opt_set_defaults(s->priv_data);
-            if ((ret = av_opt_set_dict2(s->priv_data, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
+            if ((ret = av_opt_set_dict(s->priv_data, &tmp)) < 0)
                 goto fail;
         }
     }
 
     /* set muxer identification string */
-    if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
+    if (s->nb_streams && !(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         av_dict_set(&s->metadata, "encoder", LIBAVFORMAT_IDENT, 0);
     } else {
         av_dict_set(&s->metadata, "encoder", NULL, 0);
-    }
-
-    for (e = NULL; e = av_dict_get(s->metadata, "encoder-", e, AV_DICT_IGNORE_SUFFIX); ) {
-        av_dict_set(&s->metadata, e->key, NULL, 0);
     }
 
     if (options) {
@@ -449,17 +430,10 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     int delay = FFMAX(st->codec->has_b_frames, st->codec->max_b_frames > 0);
-    int num, den, i;
-    int frame_size;
+    int num, den, frame_size, i;
 
     av_dlog(s, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), delay, pkt->size, pkt->stream_index);
-
-    if (pkt->duration < 0 && st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-        av_log(s, AV_LOG_WARNING, "Packet with invalid duration %d in stream %d\n",
-               pkt->duration, pkt->stream_index);
-        pkt->duration = 0;
-    }
 
     /* duration field */
     if (pkt->duration == 0) {
@@ -530,6 +504,8 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         break;
     case AVMEDIA_TYPE_VIDEO:
         frac_add(&st->pts, (int64_t)st->time_base.den * st->codec->time_base.num);
+        break;
+    default:
         break;
     }
     return 0;
@@ -632,7 +608,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     if (!pkt) {
         if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
             ret = s->oformat->write_packet(s, NULL);
-            if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
+            if (s->flush_packets && s->pb && s->pb->error >= 0)
                 avio_flush(s->pb);
             if (ret >= 0 && s->pb && s->pb->error < 0)
                 ret = s->pb->error;
@@ -658,12 +634,12 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 #define CHUNK_START 0x1000
 
 int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
-                             int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
+                              int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
 {
-    int ret;
     AVPacketList **next_point, *this_pktl;
     AVStream *st   = s->streams[pkt->stream_index];
     int chunked    = s->max_chunk_size || s->max_chunk_duration;
+    int ret;
 
     this_pktl      = av_mallocz(sizeof(AVPacketList));
     if (!this_pktl)
@@ -675,17 +651,16 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     pkt->buf       = NULL;
-    pkt->side_data = NULL;
-    pkt->side_data_elems = 0;
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
         av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
         av_assert0(((AVFrame *)pkt->data)->buf);
     } else {
-        // Duplicate the packet if it uses non-allocated memory
+        // duplicate the packet if it uses non-allocated memory
         if ((ret = av_dup_packet(&this_pktl->pkt)) < 0) {
             av_free(this_pktl);
             return ret;
         }
+        av_copy_packet_side_data(&this_pktl->pkt, &this_pktl->pkt); // copy side data
     }
 
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {
@@ -735,7 +710,6 @@ next_non_null:
 
     s->streams[pkt->stream_index]->last_in_packet_buffer =
         *next_point                                      = this_pktl;
-
     return 0;
 }
 
@@ -766,21 +740,19 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                                  AVPacket *pkt, int flush)
 {
     AVPacketList *pktl;
-    int stream_count = 0;
-    int noninterleaved_count = 0;
+    int stream_count = 0, noninterleaved_count = 0;
     int i, ret;
 
     if (pkt) {
-        if ((ret = ff_interleave_add_packet(s, pkt, interleave_compare_dts)) < 0)
+        ret = ff_interleave_add_packet(s, pkt, interleave_compare_dts);
+        if (ret < 0)
             return ret;
     }
 
     for (i = 0; i < s->nb_streams; i++) {
         if (s->streams[i]->last_in_packet_buffer) {
             ++stream_count;
-        } else if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_ATTACHMENT &&
-                   s->streams[i]->codec->codec_id != AV_CODEC_ID_VP8 &&
-                   s->streams[i]->codec->codec_id != AV_CODEC_ID_VP9) {
+        } else if (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             ++noninterleaved_count;
         }
     }
@@ -788,11 +760,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     if (s->internal->nb_interleaved_streams == stream_count)
         flush = 1;
 
-    if (s->max_interleave_delta > 0 &&
-        s->packet_buffer &&
-        !flush &&
-        s->internal->nb_interleaved_streams == stream_count+noninterleaved_count
-    ) {
+    if (s->max_interleave_delta > 0 && s->packet_buffer && !flush) {
         AVPacket *top_pkt = &s->packet_buffer->pkt;
         int64_t delta_dts = INT64_MIN;
         int64_t top_dts = av_rescale_q(top_pkt->dts,
@@ -872,6 +840,12 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
+
+        //FIXME/XXX/HACK drop zero sized packets
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && pkt->size == 0) {
+            ret = 0;
+            goto fail;
+        }
 
         av_dlog(s, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
@@ -966,10 +940,9 @@ int av_get_output_timestamp(struct AVFormatContext *s, int stream,
 }
 
 int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
-                     AVFormatContext *src, int interleave)
+                     AVFormatContext *src)
 {
     AVPacket local_pkt;
-    int ret;
 
     local_pkt = *pkt;
     local_pkt.stream_index = dst_stream;
@@ -985,12 +958,7 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
         local_pkt.duration = av_rescale_q(pkt->duration,
                                           src->streams[pkt->stream_index]->time_base,
                                           dst->streams[dst_stream]->time_base);
-
-    if (interleave) ret = av_interleaved_write_frame(dst, &local_pkt);
-    else            ret = av_write_frame(dst, &local_pkt);
-    pkt->buf = local_pkt.buf;
-    pkt->destruct = local_pkt.destruct;
-    return ret;
+    return av_write_frame(dst, &local_pkt);
 }
 
 static int av_write_uncoded_frame_internal(AVFormatContext *s, int stream_index,

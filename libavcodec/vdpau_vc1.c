@@ -45,14 +45,14 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
     switch (s->pict_type) {
     case AV_PICTURE_TYPE_B:
         if (s->next_picture_ptr) {
-        ref = ff_vdpau_get_surface_id(s->next_picture.f);
+        ref = ff_vdpau_get_surface_id(&s->next_picture);
         assert(ref != VDP_INVALID_HANDLE);
         info->backward_reference = ref;
         }
         /* fall-through */
     case AV_PICTURE_TYPE_P:
         if (s->last_picture_ptr) {
-        ref = ff_vdpau_get_surface_id(s->last_picture.f);
+        ref = ff_vdpau_get_surface_id(&s->last_picture);
         assert(ref != VDP_INVALID_HANDLE);
         info->forward_reference  = ref;
         }
@@ -93,7 +93,7 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
     info->deblockEnable     = v->postprocflag & 1;
     info->pquant            = v->pq;
 
-    return ff_vdpau_common_start_frame(pic_ctx, buffer, size);
+    return ff_vdpau_common_start_frame(pic, buffer, size);
 }
 
 static int vdpau_vc1_decode_slice(AVCodecContext *avctx,
@@ -105,7 +105,7 @@ static int vdpau_vc1_decode_slice(AVCodecContext *avctx,
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
 
-    val = ff_vdpau_add_buffer(pic_ctx, buffer, size);
+    val = ff_vdpau_add_buffer(pic, buffer, size);
     if (val < 0)
         return val;
 
@@ -122,7 +122,7 @@ AVHWAccel ff_wmv3_vdpau_hwaccel = {
     .start_frame    = vdpau_vc1_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
-    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };
 #endif
 
@@ -134,5 +134,5 @@ AVHWAccel ff_vc1_vdpau_hwaccel = {
     .start_frame    = vdpau_vc1_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
-    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };

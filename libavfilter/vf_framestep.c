@@ -28,7 +28,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct NullContext {
+typedef struct {
     const AVClass *class;
     int frame_step;
 } FrameStepContext;

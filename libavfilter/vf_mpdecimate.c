@@ -28,7 +28,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/timestamp.h"
 #include "libavcodec/dsputil.h"
-#include "libavcodec/pixblockdsp.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "formats.h"
@@ -50,7 +49,6 @@ typedef struct {
     int hsub, vsub;                ///< chroma subsampling values
     AVFrame *ref;                  ///< reference picture
     DSPContext dspctx;             ///< context providing optimized diff routines
-    PixblockDSPContext pdsp;
     AVCodecContext *avctx;         ///< codec context required for the DSPContext
 } DecimateContext;
 
@@ -77,7 +75,6 @@ static int diff_planes(AVFilterContext *ctx,
 {
     DecimateContext *decimate = ctx->priv;
     DSPContext *dspctx = &decimate->dspctx;
-    PixblockDSPContext *pdsp = &decimate->pdsp;
 
     int x, y;
     int d, c = 0;
@@ -87,7 +84,7 @@ static int diff_planes(AVFilterContext *ctx,
     /* compute difference for blocks of 8x8 bytes */
     for (y = 0; y < h-7; y += 4) {
         for (x = 8; x < w-7; x += 4) {
-            pdsp->diff_pixels(block,
+            dspctx->diff_pixels(block,
                                 cur+x+y*linesize,
                                 ref+x+y*linesize, linesize);
             d = dspctx->sum_abs_dctelem(block);
@@ -144,7 +141,6 @@ static av_cold int init(AVFilterContext *ctx)
     if (!decimate->avctx)
         return AVERROR(ENOMEM);
     avpriv_dsputil_init(&decimate->dspctx, decimate->avctx);
-    ff_pixblockdsp_init(&decimate->pdsp, decimate->avctx);
 
     return 0;
 }

@@ -278,13 +278,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
     s->delay_index = dindex;
 
     av_frame_free(&frame);
-
-    if (out_frame) {
-        err = ff_filter_frame(ctx->outputs[0], out_frame);
-        return err;
-    }
-
-    return 0;
+    return out_frame ? ff_filter_frame(ctx->outputs[0], out_frame) : 0;
 }
 
 static int compand_drain(AVFilterLink *outlink)
@@ -303,7 +297,6 @@ static int compand_drain(AVFilterLink *outlink)
     s->pts += av_rescale_q(frame->nb_samples,
             (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
 
-    av_assert0(channels > 0);
     for (chan = 0; chan < channels; chan++) {
         AVFrame *delay_frame = s->delay_frame;
         double *dbuf = (double *)delay_frame->extended_data[chan];
@@ -540,7 +533,7 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     CompandContext *s    = ctx->priv;
-    int ret = 0;
+    int ret;
 
     ret = ff_request_frame(ctx->inputs[0]);
 

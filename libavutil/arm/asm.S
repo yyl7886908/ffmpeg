@@ -34,12 +34,6 @@
 #   define T @
 #endif
 
-#if HAVE_AS_FUNC
-#   define FUNC
-#else
-#   define FUNC @
-#endif
-
 #if   HAVE_NEON
         .arch           armv7-a
 #elif HAVE_ARMV6T2
@@ -72,7 +66,7 @@ ELF     .section .note.GNU-stack,"",%progbits @ Mark stack as non-executable
         .noaltmacro
       .endif
 ELF     .size   \name, . - \name
-FUNC    .endfunc
+        .endfunc
         .purgem endfunc
     .endm
         .text
@@ -80,11 +74,11 @@ FUNC    .endfunc
     .if \export
         .global EXTERN_ASM\name
 ELF     .type   EXTERN_ASM\name, %function
-FUNC    .func   EXTERN_ASM\name
+        .func   EXTERN_ASM\name
 EXTERN_ASM\name:
     .else
 ELF     .type   \name, %function
-FUNC    .func   \name
+        .func   \name
 \name:
     .endif
 .endm

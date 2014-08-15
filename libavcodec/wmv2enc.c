@@ -60,9 +60,7 @@ static av_cold int wmv2_encode_init(AVCodecContext *avctx){
     ff_wmv2_common_init(w);
 
     avctx->extradata_size= 4;
-    avctx->extradata= av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!avctx->extradata)
-        return AVERROR(ENOMEM);
+    avctx->extradata= av_mallocz(avctx->extradata_size + 10);
     encode_ext_header(w);
 
     return 0;

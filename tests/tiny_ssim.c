@@ -29,7 +29,6 @@
 
 #include "config.h"
 #include <inttypes.h>
-#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -196,13 +195,7 @@ int main(int argc, char* argv[])
     f[0] = fopen(argv[1], "rb");
     f[1] = fopen(argv[2], "rb");
     sscanf(argv[3], "%dx%d", &w, &h);
-
-    if (w<=0 || h<=0 || w*(int64_t)h >= INT_MAX/3 || 2LL*w+12 >= INT_MAX / sizeof(*temp)) {
-        fprintf(stderr, "Dimensions are too large, or invalid\n");
-        return -2;
-    }
-
-    frame_size = w*h*3LL/2;
+    frame_size = w*h*3/2;
     for( i=0; i<2; i++ )
     {
         buf[i] = malloc(frame_size);

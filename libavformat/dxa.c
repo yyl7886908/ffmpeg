@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <inttypes.h>
-
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -198,8 +196,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             size = AV_RB32(buf + 5);
             if(size > 0xFFFFFF){
-                av_log(s, AV_LOG_ERROR, "Frame size is too big: %"PRIu32"\n",
-                       size);
+                av_log(s, AV_LOG_ERROR, "Frame size is too big: %d\n", size);
                 return AVERROR_INVALIDDATA;
             }
             if(av_new_packet(pkt, size + DXA_EXTRA_SIZE + pal_size) < 0)

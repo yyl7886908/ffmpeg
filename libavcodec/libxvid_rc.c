@@ -22,15 +22,12 @@
 
 #include "config.h"
 #include <xvid.h>
+#include <unistd.h>
 #include "libavutil/attributes.h"
 #include "libavutil/file.h"
 #include "avcodec.h"
 #include "libxvid.h"
 #include "mpegvideo.h"
-
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #undef NDEBUG
 #include <assert.h>

@@ -1,4 +1,5 @@
 NAME = avresample
+FFLIBS = avutil
 
 HEADERS = avresample.h                                                  \
           version.h                                                     \
