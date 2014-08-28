@@ -482,8 +482,7 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
     struct playlist *v = opaque;
     HLSContext *c = v->parent->priv_data;
     int ret, i;
-    int numRetry = 0;
-	av_log(NULL, AV_LOG_INFO, "hls read data is running");
+
 restart:
     if (!v->input) {
         /* If this is a live stream and the reload interval has elapsed since
@@ -522,15 +521,7 @@ reload:
 
         ret = open_input(c, v);
         if (ret < 0)
-		{
-			av_log(NULL, AV_LOG_INFO, "hls read data numRetry = %d\n", numRetry);
-			if(numRetry > 3)
-				return ret;
-			numRetry++;
-			v->cur_seq_no++;
-			goto restart;
-		}
-            //return ret;
+            return ret;
     }
     ret = ffurl_read(v->input, buf, buf_size);
     if (ret > 0)
